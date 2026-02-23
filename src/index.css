@@ -1,0 +1,76 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+button { font: inherit; }
+
+/* ✅ Cho control Leaflet/Geoman nổi lên trên panel/toolbar custom */
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 20000 !important;
+}
+
+.leaflet-pm-toolbar {
+  z-index: 20001 !important;
+}
+.pm-measure-label {
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+}
+
+.pm-measure-label{
+ background: transparent !important;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+
+  white-space: nowrap;     /* ✅ không xuống dòng */
+  display: inline-block;   /* ✅ giữ 1 dòng */
+  line-height: 1.2;        /* ✅ ổn định chiều cao */
+}
+
+/* ✅ Chỉ di chuyển riêng thanh Geoman, không đụng container leaflet-right */
+/* ✅ Canh giữa toàn bộ cột control bên phải theo chiều dọc */
+.leaflet-control-container .leaflet-right {
+  top: 0 !important;
+  bottom: 0 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important; /* ✅ giữa dọc */
+  align-items: flex-end !important;   /* sát mép phải */
+  pointer-events: none;               /* ✅ tránh chặn map */
+}
+
+/* ✅ trả lại pointer cho các nút bên trong để bấm được */
+.leaflet-control-container .leaflet-right .leaflet-control {
+  pointer-events: auto;
+  margin: 8px 10px !important;        /* khoảng cách đẹp */
+}
+
+
