@@ -577,67 +577,48 @@ map.on("layerremove", (e) => {
   const map = mapRef.current;
   if (!map) return;
 
-  if (!("geolocation" in navigator)) {
-    alert("Trình duyệt không hỗ trợ định vị.");
-    return;
-  }
+  // Hiển thị thông báo nhỏ để người dùng biết đang quét (tùy chọn)
+  // alert("Đang xác định vị trí chính xác của bạn...");
 
-  let bestAcc = Infinity;
-  let watchId = null;
+  map.locate({ 
+    setView: false, 
+    enableHighAccuracy: true, // Ép dùng GPS thay vì Wifi/Cell Tower nếu có thể
+    timeout: 15000,           // Tăng thời gian chờ lên 15s để GPS kịp fix vị trí
+    maximumAge: 0             // Không dùng vị trí cũ lưu trong bộ nhớ đệm
+  });
 
-  const stop = () => {
-    if (watchId != null) navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  };
+  // Sự kiện khi tìm thấy vị trí
+  map.once("locationfound", (e) => {
+    const { latlng, accuracy } = e;
 
-  // Timeout tổng (vd 20s) nếu mãi không ra GPS tốt
-  const hardTimeout = setTimeout(() => {
-    stop();
-    alert(
-      "Không lấy được vị trí chính xác. Hãy bật GPS + Precise Location và ra nơi thoáng."
-    );
-  }, 20000);
+    // Log để bạn kiểm tra độ sai số (đơn vị mét)
+    console.log(`Độ chính xác: ${accuracy} mét`);
 
-  watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const { latitude, longitude, accuracy } = pos.coords;
-      const latlng = L.latLng(latitude, longitude);
-
-      // chỉ nhận điểm tốt hơn
-      if (accuracy >= bestAcc) return;
-      bestAcc = accuracy;
-
-      // marker
-      if (markerRef.current) markerRef.current.setLatLng(latlng);
-      else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-
-      // zoom theo accuracy
-      const zoom = accuracy > 300 ? 17 : accuracy > 100 ? 18 : 20;
-      map.flyTo(latlng, zoom, { animate: true });
-
-      // đủ tốt thì dừng
-      if (accuracy <= 30) {
-        clearTimeout(hardTimeout);
-        stop();
-      }
-    },
-    (err) => {
-      clearTimeout(hardTimeout);
-      stop();
-
-      // err.code: 1 permission denied, 2 position unavailable, 3 timeout
-      if (err.code === 1) {
-        alert("Bạn đã từ chối quyền vị trí. Hãy bật Location permission + Precise.");
-      } else {
-        alert("Không lấy được vị trí. Hãy bật GPS/Precise và thử lại.");
-      }
-    },
-    {
-      enableHighAccuracy: true, // quan trọng
-      maximumAge: 0,
-      timeout: 10000,
+    // Xử lý marker hiển thị vị trí
+    if (markerRef.current) {
+      markerRef.current.setLatLng(latlng);
+    } else {
+      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
     }
-  );
+
+    // Zoom sát vào vị trí tìm được
+    // Nếu độ chính xác tốt (< 100m), zoom sâu (20), nếu kém thì zoom vừa (16)
+    const zoomLevel = accuracy < 100 ? 18 : 16;
+    map.flyTo(latlng, zoomLevel, { 
+      animate: true,
+      duration: 1.5 // làm cho hiệu ứng mượt hơn
+    });
+  });
+
+  // Sự kiện khi lỗi
+  map.once("locationerror", (err) => {
+    console.error("Location error:", err);
+    if (err.code === 1) {
+      alert("Bạn đã từ chối quyền truy cập vị trí. Hãy bật lại trong cài đặt trình duyệt.");
+    } else {
+      alert("Không thể xác định vị trí. Vui lòng kiểm tra kết nối mạng và GPS.");
+    }
+  });
 };
 
   const onChangeProvince = (code) => {
