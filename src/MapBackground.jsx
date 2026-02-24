@@ -585,119 +585,71 @@ map.on("layerremove", (e) => {
   const map = mapRef.current;
   if (!map) return;
 
+  // gỡ đúng handler đã gắn
+  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
+  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
+
   map.stopLocate();
 
-  if (onFoundRef.current) {
-    map.off("locationfound", onFoundRef.current);
-    onFoundRef.current = null;
-  }
-
-  if (onErrorRef.current) {
-    map.off("locationerror", onErrorRef.current);
-    onErrorRef.current = null;
-  }
-
-  // ✅ Xoá marker nếu có
+  // ✅ Xóa marker vị trí khỏi map
   if (markerRef.current) {
-    map.removeLayer(markerRef.current);
+    try {
+      map.removeLayer(markerRef.current);
+    } catch {}
     markerRef.current = null;
   }
 
-  // ✅ THÊM ĐOẠN NÀY NGAY TẠI ĐÂY
-  if (map.__accCircle) {
-    map.removeLayer(map.__accCircle);
-    map.__accCircle = null;
-  }
+  onFoundRef.current = null;
+  onErrorRef.current = null;
 
   setIsLocating(false);
 };
 
     const locateMe = () => {
-  const map = mapRef.current;
-  if (!map) return;
+          const map = mapRef.current;
+          if (!map) return;
 
-  if (isLocatingRef.current) {
-    stopLocating();
-    return;
-  }
+          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
+          if (isLocatingRef.current) {
+            stopLocating();
+            return;
+          }
 
-  setIsLocating(true);
+          // ✅ Bật
+          setIsLocating(true);
 
-  const ACC_CENTER = 20;     // ✅ mục tiêu 5–20m: chỉ center khi <= 20m
-  const ACC_ACCEPT = 120;    // ✅ bỏ qua fix quá tệ (>120m)
+          const onFound = (e) => {
+            const { latlng } = e;
 
-  let hasCentered = false;
-  let bestAcc = Infinity;
+            if (markerRef.current) {
+              markerRef.current.setLatLng(latlng);
+            } else {
+              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+            }
 
-  // thêm circle thể hiện accuracy
-  if (!map.__accCircle) map.__accCircle = null;
+            map.flyTo(latlng, 20, { animate: true });
+          };
 
-  const onFound = (e) => {
-    const { latlng, accuracy } = e;
+          const onError = () => {
+            // muốn im lặng thì bỏ alert
+            // alert("Không lấy được vị trí.");
+            stopLocating();
+          };
 
-    if (typeof accuracy !== "number") return;
+          onFoundRef.current = onFound;
+          onErrorRef.current = onError;
 
-    // 1) Nếu fix quá tệ thì bỏ qua (đỡ nhảy)
-    if (accuracy > ACC_ACCEPT) return;
+          map.on("locationfound", onFound);
+          map.on("locationerror", onError);
 
-    // 2) Chỉ update nếu fix tốt hơn fix trước (giảm noise)
-    if (accuracy >= bestAcc && bestAcc !== Infinity) {
-      // vẫn cho marker chạy nếu bạn muốn "theo dõi" bất kể accuracy:
-      // (bạn có thể bỏ comment 2 dòng dưới để luôn chạy)
-      // markerRef.current?.setLatLng(latlng);
-      // map.__accCircle?.setLatLng(latlng).setRadius(accuracy);
-      return;
-    }
-
-    bestAcc = accuracy;
-
-    // 3) Update marker
-    if (markerRef.current) markerRef.current.setLatLng(latlng);
-    else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-
-    // 4) Update accuracy circle
-    if (map.__accCircle) {
-      map.__accCircle.setLatLng(latlng).setRadius(accuracy);
-    } else {
-      map.__accCircle = L.circle(latlng, {
-        radius: accuracy,
-        weight: 2,
-        fillOpacity: 0.15,
-      }).addTo(map);
-    }
-
-    // 5) Chỉ bay tới khi accuracy đủ chuẩn (<= 20m)
-    if (!hasCentered && accuracy <= ACC_CENTER) {
-      map.flyTo(latlng, 19, { animate: true });
-      hasCentered = true;
-    }
-  };
-
-  const onError = (e) => {
-    if (e?.code === 1) {
-      stopLocating();
-      alert("Bạn đã từ chối quyền vị trí.");
-      return;
-    }
-    console.log("location error:", e?.message || e);
-  };
-
-  onFoundRef.current = onFound;
-  onErrorRef.current = onError;
-
-  map.on("locationfound", onFound);
-  map.on("locationerror", onError);
-
-  map.locate({
-    watch: true,
-    setView: false,
-    enableHighAccuracy: true,
-    timeout: 60000,
-    maximumAge: 0,
-  });
-};
-
-
+          map.locate({
+            watch: true,
+            setView: false,
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+      };
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
