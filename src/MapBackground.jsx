@@ -232,19 +232,36 @@ function updateMeasureLabel(map, layer) {
   if (!map || !layer) return;
 
   // ✅ polyline: chỉ hiện từng đoạn (segment)
-  if (isPolylineOnly(layer)) {
-    const pts = flattenLatLngs(layer.getLatLngs());
-    if (pts.length < 2) return;
+ if (isPolylineOnly(layer)) {
+  const pts = flattenLatLngs(layer.getLatLngs());
+  if (!pts || pts.length < 2) return;
 
-    // (1) label từng đoạn
-    updateSegmentLabels(map, layer);
+  // (1) vẫn hiện từng đoạn
+  updateSegmentLabels(map, layer);
 
-    // (2) nếu bạn muốn hiện thêm tổng ở giữa line thì mở comment:
-    // const total = pts.reduce((sum, p, i) => i ? sum + map.distance(pts[i-1], p) : 0, 0);
-    // bindPermanentLabel(layer, fmtLen(total), pts[Math.floor(pts.length / 2)]);
-
-    return;
+  // (2) tính tổng chiều dài
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) {
+    total += map.distance(pts[i - 1], pts[i]);
   }
+
+  // (3) đặt label tổng ở điểm cuối
+  const lastPoint = pts[pts.length - 1];
+
+  layer.unbindTooltip();
+  layer
+    .bindTooltip(`Tổng = ${fmtLen(total)}`, {
+      permanent: true,
+      direction: "top",
+      className: "pm-measure-label",
+      opacity: 1,
+      interactive: false,
+      offset: [0, -12],
+    })
+    .openTooltip(lastPoint);
+
+  return;
+}
 
   // ✅ polygon: diện tích ở giữa + từng cạnh
   if (isPolygon(layer)) {
