@@ -269,10 +269,6 @@ const [isLocating, setIsLocating] = useState(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
 
-const isFollowingRef = useRef(true);
-const accuracyCircleRef = useRef(null);
-const onDragStartRef = useRef(null);
-
 useEffect(() => {
   isLocatingRef.current = isLocating;
 }, [isLocating]);
@@ -593,119 +589,67 @@ map.on("layerremove", (e) => {
   if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
   if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
 
-  // gỡ dragstart handler (để không leak)
-  if (onDragStartRef.current) map.off("dragstart", onDragStartRef.current);
-  onDragStartRef.current = null;
-
   map.stopLocate();
 
-  // Xóa marker vị trí khỏi map
+  // ✅ Xóa marker vị trí khỏi map
   if (markerRef.current) {
-    try { map.removeLayer(markerRef.current); } catch {}
+    try {
+      map.removeLayer(markerRef.current);
+    } catch {}
     markerRef.current = null;
-  }
-
-  // Xóa vòng tròn sai số
-  if (accuracyCircleRef.current) {
-    try { map.removeLayer(accuracyCircleRef.current); } catch {}
-    accuracyCircleRef.current = null;
   }
 
   onFoundRef.current = null;
   onErrorRef.current = null;
 
-  isFollowingRef.current = false;
   setIsLocating(false);
 };
 
-   const locateMe = () => {
-  const map = mapRef.current;
-  if (!map) return;
+    const locateMe = () => {
+          const map = mapRef.current;
+          if (!map) return;
 
-  // Nếu đang locate rồi: nhấn nút -> bật lại follow (thay vì tắt ngay)
-  // Nếu bạn vẫn muốn nhấn 1 phát là tắt luôn, bỏ khúc này và giữ logic cũ.
-  if (isLocatingRef.current) {
-    // Toggle follow
-    isFollowingRef.current = !isFollowingRef.current;
+          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
+          if (isLocatingRef.current) {
+            stopLocating();
+            return;
+          }
 
-    // Nếu vừa bật follow lại, kéo map về vị trí hiện tại ngay 1 lần cho “đã”
-    if (isFollowingRef.current && markerRef.current) {
-      const latlng = markerRef.current.getLatLng();
-      map.flyTo(latlng, map.getZoom(), { animate: true, duration: 0.6 });
-    }
-    return;
-  }
+          // ✅ Bật
+          setIsLocating(true);
 
-  // Bật định vị
-  setIsLocating(true);
-  isFollowingRef.current = true;
+          const onFound = (e) => {
+            const { latlng } = e;
 
-  const onFound = (e) => {
-    const { latlng, accuracy } = e;
+            if (markerRef.current) {
+              markerRef.current.setLatLng(latlng);
+            } else {
+              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+            }
 
-    // 1) Marker chấm xanh (circleMarker giống Google Maps)
-    if (markerRef.current) {
-      markerRef.current.setLatLng(latlng);
-    } else {
-      markerRef.current = L.circleMarker(latlng, {
-        radius: 8,
-        fillColor: "#3388ff",
-        color: "#ffffff",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9,
-      }).addTo(map);
-    }
+            map.flyTo(latlng, 20, { animate: true });
+          };
 
-    // 2) Vòng tròn sai số (accuracy)
-    if (accuracyCircleRef.current) {
-      accuracyCircleRef.current.setLatLng(latlng).setRadius(accuracy);
-    } else {
-      accuracyCircleRef.current = L.circle(latlng, {
-        radius: accuracy,
-        weight: 1,
-        color: "#3388ff",
-        fillColor: "#3388ff",
-        fillOpacity: 0.15,
-        interactive: false,
-      }).addTo(map);
-    }
+          const onError = () => {
+            // muốn im lặng thì bỏ alert
+            // alert("Không lấy được vị trí.");
+            stopLocating();
+          };
 
-    // 3) Follow thông minh: chỉ “bay” nếu đang follow
-    if (isFollowingRef.current) {
-      map.flyTo(latlng, map.getZoom(), {
-        animate: true,
-        duration: 0.5,
-      });
-    }
-  };
+          onFoundRef.current = onFound;
+          onErrorRef.current = onError;
 
-  const onError = (err) => {
-    console.error("GPS Error:", err);
-    stopLocating();
-  };
+          map.on("locationfound", onFound);
+          map.on("locationerror", onError);
 
-  // Người dùng kéo map -> tắt follow (nhưng vẫn watch vị trí)
-  const onDragStart = () => {
-    isFollowingRef.current = false;
-  };
-  onDragStartRef.current = onDragStart;
-  map.on("dragstart", onDragStart);
-
-  onFoundRef.current = onFound;
-  onErrorRef.current = onError;
-
-  map.on("locationfound", onFound);
-  map.on("locationerror", onError);
-
-  map.locate({
-    watch: true,
-    setView: false,
-    enableHighAccuracy: true,
-    timeout: 20000,
-    maximumAge: 1000, // cache ngắn giúp mượt, thường ổn hơn 0
-  });
-};
+          map.locate({
+            watch: true,
+            setView: false,
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+      };
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
