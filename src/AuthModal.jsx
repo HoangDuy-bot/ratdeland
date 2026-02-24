@@ -38,8 +38,8 @@ export default function AuthModal({ open, onClose }) {
   };
 
   return (
-    <div style={styles.backdrop}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+   <div style={styles.backdrop}>
+  <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
           <h3 style={{ margin: 0 }}>
             {mode === "login" ? "Đăng nhập" : "Đăng ký"}
@@ -113,7 +113,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 20000,
+    zIndex: 50000,
     padding: 16,
   },
   modal: {
