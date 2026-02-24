@@ -1,3 +1,6 @@
+/* =========================
+   Map container
+========================= */
 .map-wrap {
   position: absolute;
   inset: 0;
@@ -8,12 +11,14 @@
   inset: 0;
 }
 
-/* ===== Toolbar ===== */
+/* =========================
+   Top controls (Satellite / Locate / Badge)
+========================= */
 .map-toolbar {
   position: absolute;
   top: 14px;
   right: 14px;
-  z-index: 9999;
+  z-index: 19000;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -30,14 +35,33 @@
   display: grid;
   place-items: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  user-select: none;
 }
 
-/* ===== Panel ===== */
+.map-badge-inline {
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  white-space: nowrap;
+
+  /* ✅ không chặn bấm icon bên cạnh */
+  pointer-events: none;
+}
+
+/* =========================
+   Panel (Province / Area / Overlay / Opacity)
+========================= */
 .map-panel {
   position: absolute;
   top: 14px;
   left: 14px;
-  z-index: 9999;
+  z-index: 18000;
 
   width: 190px;
   padding: 12px;
@@ -83,55 +107,37 @@
   opacity: 0.8;
 }
 
-/* ===== Badge ===== */
-.map-badge {
-  position: absolute;
-  bottom: 14px;
-  right: 14px;
-  z-index: 9999;
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  background: rgba(15, 23, 42, 0.75);
-  color: white;
-  backdrop-filter: blur(6px);
-}
-
-/* ===== MOBILE ===== */
+/* =========================
+   MOBILE tuning
+========================= */
 @media (max-width: 640px) {
-  /* Panel nhỏ lại + kéo lên */
+  /* Panel: sát trái dưới, rộng ~1/2 màn, thấp hơn */
   .map-panel {
     left: 12px;
     right: auto;
-    width: min(92vw, 360px);   /* ✅ chỉ ~1/2 đến 2/3 màn */
+
+    width: min(52vw, 360px);   /* ✅ khoảng 1/2 màn */
     top: auto;
-    bottom: 110px;             /* ✅ kéo lên cao hơn */
+    bottom: 12px;
+
     padding: 10px 12px;
     border-radius: 18px;
-    z-index: 18000;
 
-    max-height: 42vh;          /* ✅ không chiếm quá lớn */
-    overflow: auto;            /* ✅ nếu nhiều nội dung vẫn cuộn */
+    max-height: 28vh;          /* ✅ thấp hơn */
+    overflow: auto;
   }
 
-  /* ✅ Nút vệ tinh + vị trí -> sát panel góc trái trên */
+  /* Toolbar: góc trái trên, nằm ngang */
   .map-toolbar {
-    position: absolute;        /* ✅ thêm để chắc chắn ăn */
     top: 12px;
     left: 12px;
     right: auto;
-    flex-direction: row;       /* ✅ nằm ngang cho gọn */
+    flex-direction: row;
+    align-items: center;
     gap: 10px;
-    z-index: 19000;
   }
 
-  /* badge né panel */
-  .map-badge {
-    bottom: 70px;
-    right: 12px;
-  }
-
-  /* ✅ kéo geoman (tool vẽ/xoá) lên góc phải trên */
+  /* Geoman (draw/remove): góc phải trên, sát mép gọn */
   .leaflet-top.leaflet-right {
     top: 12px;
     right: 12px;
