@@ -8,28 +8,35 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState(null);
 
+  // ✅ thêm state mở/đóng sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const logout = async () => {
     await supabase.auth.signOut();
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   return (
     <div className="app">
-      {/* Sidebar / Topbar */}
-      <div className="sidebar">
+      {/* ✅ nút mở menu (chỉ hiện ở mobile nhờ CSS) */}
+      <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+        ☰
+      </button>
+
+      {/* ✅ backdrop (mobile) */}
+      {sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
+
+      {/* Sidebar */}
+      <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="brand">
           <h1 className="title">RATDELand</h1>
           <p className="subtitle">Dự án bản đồ tiện ích</p>
@@ -40,11 +47,23 @@ export default function App() {
           {user && <p className="status ok">Đã đăng nhập: {user.email}</p>}
 
           {!user ? (
-            <button className="btn" onClick={() => setAuthOpen(true)}>
+            <button
+              className="btn"
+              onClick={() => {
+                setAuthOpen(true);
+                setSidebarOpen(false); // ✅ đóng drawer khi mở modal
+              }}
+            >
               Đăng nhập / Đăng ký
             </button>
           ) : (
-            <button className="btn" onClick={logout}>
+            <button
+              className="btn"
+              onClick={() => {
+                logout();
+                setSidebarOpen(false);
+              }}
+            >
               Đăng xuất
             </button>
           )}
@@ -52,7 +71,7 @@ export default function App() {
       </div>
 
       {/* Map */}
-      <div className="main">
+      <div className="main" onClick={() => setSidebarOpen(false)}>
         <MapBackground user={user} onRequireAuth={() => setAuthOpen(true)} />
       </div>
 
