@@ -134,3 +134,23 @@
     display: none;
   }
 }
+
+/* ✅ Khi mở sidebar hoặc modal -> khóa tương tác map + controls */
+.app.sidebar-open .main,
+.app.modal-open .main {
+  pointer-events: none;
+}
+
+/* ✅ Khóa luôn Leaflet controls để không bấm được */
+.app.sidebar-open .leaflet-control-container,
+.app.modal-open .leaflet-control-container {
+  pointer-events: none;
+}
+
+/* ✅ Khóa toolbar/panel của bạn nếu cần */
+.app.sidebar-open .map-toolbar,
+.app.sidebar-open .map-panel,
+.app.modal-open .map-toolbar,
+.app.modal-open .map-panel {
+  pointer-events: none;
+}

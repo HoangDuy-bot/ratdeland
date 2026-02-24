@@ -26,7 +26,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app">
+    <div className={`app ${(sidebarOpen ? "sidebar-open" : "")} ${(authOpen ? "modal-open" : "")}`}>
       {/* ✅ nút mở menu (chỉ hiện ở mobile nhờ CSS) */}
       <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
         ☰
