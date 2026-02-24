@@ -19,7 +19,12 @@ const pinIcon = new L.Icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
-
+const redPinIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 // ✅ Danh mục tỉnh/khu vực (tile dạng Global Mapper: Z{z}/{y}/{x}.png)
 const CATALOG = [
   {
@@ -269,6 +274,8 @@ const warnedAccRef = useRef(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
 
+const targetMarkerRef = useRef(null); // ✅ pin đỏ đánh dấu
+
 useEffect(() => {
   isLocatingRef.current = isLocating;
 }, [isLocating]);
@@ -368,6 +375,44 @@ useEffect(() => {
     baseLayerRef.current = layers.sat;
 
     mapRef.current = map;
+
+    // ✅ Long-press để thả pin đỏ (mobile), click phải (desktop)
+let pressTimer = null;
+let pressLatLng = null;
+
+const placeTargetMarker = (latlng) => {
+  if (targetMarkerRef.current) {
+    targetMarkerRef.current.setLatLng(latlng);
+  } else {
+    targetMarkerRef.current = L.marker(latlng, { icon: redPinIcon }).addTo(map);
+    targetMarkerRef.current.on("click", () => {
+      map.removeLayer(targetMarkerRef.current);
+      targetMarkerRef.current = null;
+    });
+  }
+};
+
+// Desktop: click phải / giữ chuột -> context menu
+map.on("contextmenu", (e) => {
+  placeTargetMarker(e.latlng);
+});
+
+// Mobile: nhấn đè ~450ms
+map.on("mousedown touchstart", (e) => {
+  // Leaflet event có thể khác nhau giữa mouse/touch
+  pressLatLng = e.latlng || (e.latlng === undefined ? null : e.latlng);
+
+  pressTimer = setTimeout(() => {
+    if (pressLatLng) placeTargetMarker(pressLatLng);
+  }, 450);
+});
+
+map.on("mouseup touchend touchcancel move", () => {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+});
 
     // ✅ Bật công cụ đo (Geoman)
    // ✅ Import Geoman NGAY SAU khi tạo map
