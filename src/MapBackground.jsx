@@ -269,9 +269,6 @@ const [isLocating, setIsLocating] = useState(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
 
-const watchIdRef = useRef(null);     // id của geolocation.watchPosition
-const accCircleRef = useRef(null);   // vòng sai số (accuracy)
-
 useEffect(() => {
   isLocatingRef.current = isLocating;
 }, [isLocating]);
@@ -350,10 +347,6 @@ useEffect(() => {
   }
 }, [uiLocked]);
   
-  useEffect(() => {
-  if (uiLocked && isLocatingRef.current) stopLocating();
-}, [uiLocked]);
-
   // init map
   useEffect(() => {
     if (mapRef.current) return;
@@ -592,92 +585,71 @@ map.on("layerremove", (e) => {
   const map = mapRef.current;
   if (!map) return;
 
-  // ✅ dừng watchPosition (chuẩn theo navigator.geolocation)
-  if (watchIdRef.current != null) {
-    try { navigator.geolocation.clearWatch(watchIdRef.current); } catch {}
-    watchIdRef.current = null;
-  }
+  // gỡ đúng handler đã gắn
+  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
+  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
 
-  // ✅ xóa marker
+  map.stopLocate();
+
+  // ✅ Xóa marker vị trí khỏi map
   if (markerRef.current) {
-    try { map.removeLayer(markerRef.current); } catch {}
+    try {
+      map.removeLayer(markerRef.current);
+    } catch {}
     markerRef.current = null;
   }
 
-  // ✅ xóa vòng sai số
-  if (accCircleRef.current) {
-    try { map.removeLayer(accCircleRef.current); } catch {}
-    accCircleRef.current = null;
-  }
+  onFoundRef.current = null;
+  onErrorRef.current = null;
 
   setIsLocating(false);
 };
 
     const locateMe = () => {
-  const map = mapRef.current;
-  if (!map) return;
+          const map = mapRef.current;
+          if (!map) return;
 
-  // ✅ Nếu đang bật -> tắt
-  if (isLocatingRef.current) {
-    stopLocating();
-    return;
-  }
+          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
+          if (isLocatingRef.current) {
+            stopLocating();
+            return;
+          }
 
-  if (!navigator.geolocation) {
-    alert("Thiết bị/trình duyệt không hỗ trợ định vị.");
-    return;
-  }
+          // ✅ Bật
+          setIsLocating(true);
 
-  setIsLocating(true);
+          const onFound = (e) => {
+            const { latlng } = e;
 
-  const options = {
-    enableHighAccuracy: true, // ✅ GPS tốt hơn
-    timeout: 20000,           // ✅ tăng timeout (3000ms thường dễ fail)
-    maximumAge: 0,            // ✅ không lấy cache cũ
-  };
+            if (markerRef.current) {
+              markerRef.current.setLatLng(latlng);
+            } else {
+              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+            }
 
-  const onSuccess = (pos) => {
-    const { latitude, longitude, accuracy } = pos.coords;
-    const latlng = L.latLng(latitude, longitude);
+            map.flyTo(latlng, 20, { animate: true });
+          };
 
-    // ✅ Marker ghim vị trí (cập nhật liên tục)
-    if (markerRef.current) {
-      markerRef.current.setLatLng(latlng);
-    } else {
-      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-    }
+          const onError = () => {
+            // muốn im lặng thì bỏ alert
+            // alert("Không lấy được vị trí.");
+            stopLocating();
+          };
 
-    // ✅ Vòng sai số (accuracy mét) - giúp thấy “chính xác hay chung chung”
-    if (typeof accuracy === "number" && accuracy > 0) {
-      if (accCircleRef.current) {
-        accCircleRef.current.setLatLng(latlng).setRadius(accuracy);
-      } else {
-        accCircleRef.current = L.circle(latlng, {
-          radius: accuracy,
-          weight: 1,
-          fillOpacity: 0.12,
-        }).addTo(map);
-      }
-    }
+          onFoundRef.current = onFound;
+          onErrorRef.current = onError;
 
-    // ✅ Zoom theo độ chính xác để đỡ “bay quá sát” khi accuracy lớn
-    const zoom =
-      accuracy <= 15 ? 20 :
-      accuracy <= 40 ? 19 :
-      accuracy <= 80 ? 18 : 17;
+          map.on("locationfound", onFound);
+          map.on("locationerror", onError);
 
-    map.flyTo(latlng, zoom, { animate: true });
-  };
-
-  const onError = (err) => {
-    console.warn(`GEO ERROR(${err.code}): ${err.message}`);
-    alert("Không lấy được vị trí. Hãy bật GPS và cấp quyền vị trí (Precise/Chính xác).");
-    stopLocating();
-  };
-
-  // ✅ watchPosition: cập nhật liên tục như bạn muốn “cập nhật vị trí cho thiết bị”
-  watchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, options);
-};
+          map.locate({
+            watch: true,
+            setView: false,
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+      };
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
