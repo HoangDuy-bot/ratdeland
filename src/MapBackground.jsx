@@ -1,4 +1,7 @@
 import { supabase } from "./supabaseClient";
+
+import "./MapBackground.css";
+
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
@@ -569,22 +572,23 @@ map.on("layerremove", (e) => {
   };
 
   return (
-    <div style={styles.wrap}>
-      <div ref={mapEl} style={styles.map} />
+    <div className="map-wrap">
+      <div ref={mapEl} className="map-canvas" />
 
-      <div style={styles.toolbar}>
-        <button style={styles.btn} title="Đổi loại bản đồ" onClick={cycleMapType}>
+      <div className="map-toolbar">
+        <button className="map-btn" title="Đổi loại bản đồ" onClick={cycleMapType}>
           {mapType === "osm" ? "🏙️" : mapType === "sat" ? "🌍" : "🗺️"}
         </button>
-        <button style={styles.btn} title="Vị trí của tôi" onClick={locateMe}>
+
+        <button className="map-btn" title="Vị trí của tôi" onClick={locateMe}>
           <MyLocationIcon size={20} />
         </button>
       </div>
 
-      <div style={styles.panel}>
-        <div style={styles.row}>
-          <label style={styles.label}>Tỉnh</label>
-          <select style={styles.select} value={provinceCode} onChange={(e) => onChangeProvince(e.target.value)}>
+      <div className="map-panel">
+        <div className="row">
+          <label className="label">Tỉnh</label>
+          <select className="select" value={provinceCode} onChange={(e) => onChangeProvince(e.target.value)}>
             {CATALOG.map((p) => (
               <option key={p.provinceCode} value={p.provinceCode}>
                 {p.provinceName}
@@ -593,9 +597,9 @@ map.on("layerremove", (e) => {
           </select>
         </div>
 
-        <div style={styles.row}>
-          <label style={styles.label}>Khu vực</label>
-          <select style={styles.select} value={areaKey} onChange={(e) => setAreaKey(e.target.value)}>
+        <div className="row">
+          <label className="label">Khu vực</label>
+          <select className="select" value={areaKey} onChange={(e) => setAreaKey(e.target.value)}>
             {selectedProvince?.areas?.map((a) => (
               <option key={a.key} value={a.key}>
                 {a.label}
@@ -604,9 +608,9 @@ map.on("layerremove", (e) => {
           </select>
         </div>
 
-        <div style={styles.row}>
-          <label style={styles.label}>
-           <input
+        <div className="row">
+          <label className="label">
+            <input
               type="checkbox"
               checked={overlayEnabled}
               onChange={(e) => {
@@ -615,13 +619,11 @@ map.on("layerremove", (e) => {
                   onRequireAuth?.();
                   return;
                 }
-
                 if (!approved) {
                   alert("Tài khoản chưa được duyệt.");
                   setOverlayEnabled(false);
                   return;
                 }
-
                 setOverlayEnabled(e.target.checked);
               }}
               style={{ marginRight: 8 }}
@@ -630,104 +632,23 @@ map.on("layerremove", (e) => {
           </label>
         </div>
 
-        <div style={styles.row}>
-          <label style={styles.label}>Độ mờ</label>
+        <div className="row">
+          <label className="label">Độ mờ</label>
           <input
+            className="range"
             type="range"
             min="0"
             max="1"
             step="0.05"
             value={opacity}
             onChange={(e) => setOpacity(parseFloat(e.target.value))}
-            style={{ width: "100%" }}
             disabled={!overlayEnabled}
           />
-          <div style={{ fontSize: 12, opacity: 0.8 }}>{Math.round(opacity * 100)}%</div>
+          <div className="pct">{Math.round(opacity * 100)}%</div>
         </div>
       </div>
 
-      <div style={styles.badge}>{mapType === "osm" ? "Đường phố" : mapType === "sat" ? "Vệ tinh" : "Map"}</div>
+      <div className="map-badge">{mapType === "osm" ? "Đường phố" : mapType === "sat" ? "Vệ tinh" : "Map"}</div>
     </div>
   );
 }
-
-const styles = {
-  wrap: { position: "absolute", inset: 0 },
-
-  map: { position: "absolute", inset: 0 },
-
-  toolbar: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    zIndex: 9999,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  },
-
-  btn: {
-    width: "clamp(38px, 9vw, 44px)",
-    height: "clamp(38px, 9vw, 44px)",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,.10)",
-    background: "rgba(255,255,255,.85)",
-    cursor: "pointer",
-    fontSize: "clamp(16px, 4vw, 18px)",
-    display: "grid",
-    placeItems: "center",
-    boxShadow: "0 8px 20px rgba(0,0,0,.15)",
-    userSelect: "none",
-  },
-
-  panel: {
-    position: "absolute",
-    top: 14,
-    left: 14,
-    zIndex: 9999,
-
-    width: "clamp(170px, 30vw, 180px)",   // ✅ tự co giãn
-    padding: "clamp(8px, 2.5vw, 12px)",
-    borderRadius: 16,
-
-    background: "rgba(255,255,255,0.38)",  // ✅ trong suốt thật
-    border: "1px solid rgba(255,255,255,0.4)",
-
-    backdropFilter: "blur(16px) saturate(160%)",
-    WebkitBackdropFilter: "blur(16px) saturate(160%)",
-
-    boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-  },
-
-  row: { marginBottom: "clamp(6px, 2vw, 10px)" },
-
-  label: {
-    fontSize: "clamp(10px, 2.6vw, 12px)",
-    fontWeight: 600,
-    marginBottom: 4,
-  },
-
-  select: {
-    width: "100%",
-    height: "clamp(28px, 6.5vw, 34px)",
-    padding: "4px 8px",
-    borderRadius: 10,
-    fontSize: "clamp(11px, 2.8vw, 13px)",
-    border: "1px solid rgba(255,255,255,0.5)",
-    background: "rgba(255,255,255,0.6)",
-    outline: "none",
-  },
-
-  badge: {
-    position: "absolute",
-    bottom: 14,
-    right: 14,
-    zIndex: 9999,
-    padding: "clamp(6px, 2vw, 8px) clamp(10px, 3vw, 12px)",
-    borderRadius: 20,
-    fontSize: "clamp(10px, 2.5vw, 12px)",
-    background: "rgba(15,23,42,0.75)",
-    color: "white",
-    backdropFilter: "blur(6px)",
-  },
-};

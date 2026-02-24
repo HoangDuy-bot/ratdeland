@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ratdeland</string>
+    <string name="title_activity_main">Ratdeland</string>
+    <string name="package_name">com.ratdeland.app</string>
+    <string name="custom_url_scheme">com.ratdeland.app</string>
+</resources>
