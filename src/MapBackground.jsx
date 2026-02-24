@@ -264,7 +264,7 @@ const [isLocating, setIsLocating] = useState(false);
   const baseLayerRef = useRef(null);
   const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
   const markerRef = useRef(null);
-
+const warnedAccRef = useRef(false);
   const isLocatingRef = useRef(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
@@ -581,7 +581,21 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-    const stopLocating = () => {
+    const ACC_WARN_M = 50;
+
+// nhắc người dùng bật "vị trí chính xác" cho Chrome
+const showPreciseLocationHint = () => {
+  alert(
+    "Vị trí đang sai số lớn (>50m).\n\n" +
+      "Cách khắc phục trên Android:\n" +
+      "1) Cài đặt → Ứng dụng → Chrome → Quyền → Vị trí\n" +
+      "2) Chọn 'Chỉ cho phép khi dùng ứng dụng'\n" +
+      "3) Bật 'Vị trí chính xác'\n\n" +
+      "Sau đó mở lại trang và bấm 'Vị trí của tôi'."
+  );
+};
+
+  const stopLocating = () => {
   const map = mapRef.current;
   if (!map) return;
 
@@ -603,6 +617,7 @@ map.on("layerremove", (e) => {
   onErrorRef.current = null;
 
   setIsLocating(false);
+warnedAccRef.current = false;
 };
 
     const locateMe = () => {
@@ -612,23 +627,36 @@ map.on("layerremove", (e) => {
           // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
           if (isLocatingRef.current) {
             stopLocating();
+            warnedAccRef.current = false;
             return;
           }
 
           // ✅ Bật
           setIsLocating(true);
+warnedAccRef.current = false;
 
           const onFound = (e) => {
-            const { latlng } = e;
+  const { latlng, accuracy } = e;
 
-            if (markerRef.current) {
-              markerRef.current.setLatLng(latlng);
-            } else {
-              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-            }
+  // ✅ nếu sai số lớn thì nhắc (nhưng vẫn cho hiện vị trí)
+  if (
+  !warnedAccRef.current &&
+  typeof accuracy === "number" &&
+  accuracy > ACC_WARN_M
+) {
+  warnedAccRef.current = true;
+  showPreciseLocationHint();
+}
 
-            map.flyTo(latlng, 20, { animate: true });
-          };
+  if (markerRef.current) {
+    markerRef.current.setLatLng(latlng);
+  } else {
+    markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+  }
+
+  // ✅ đừng ép zoom về 20 nữa, giữ zoom hiện tại để khỏi giật
+  map.panTo(latlng, { animate: true });
+};
 
           const onError = () => {
             // muốn im lặng thì bỏ alert
