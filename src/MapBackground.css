@@ -105,15 +105,21 @@
     top: auto;
     bottom: 12px;
     width: auto;
+
     border-radius: 18px;
+    padding: 10px 12px;
+
+    /* ✅ chắc chắn nằm trên map */
+    z-index: 18000;
   }
 
+  /* toolbar né panel */
   .map-toolbar {
-    top: auto;
-    bottom: 140px;
+    top: 12px;
     right: 12px;
   }
 
+  /* badge né panel */
   .map-badge {
     bottom: 110px;
     right: 12px;
