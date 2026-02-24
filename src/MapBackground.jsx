@@ -573,47 +573,70 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-  const locateMe = () => {
-  const map = mapRef.current;
-  if (!map) return;
+    const locateMe = () => {
+      const map = mapRef.current;
+      if (!map) return;
 
-  // ✅ Nếu đang bật → tắt
-  if (isLocating) {
-    map.off("locationfound");
-    map.off("locationerror");
-    map.stopLocate();
-    setIsLocating(false);    
-    return;
-  }
+      // ✅ Nếu đang bật → tắt
+      if (isLocating) {
+        map.off("locationfound");
+        map.off("locationerror");
+        map.stopLocate();
 
-  // ✅ Nếu đang tắt → bật
-  setIsLocating(true);
+        // ✅ Xóa marker vị trí khỏi map khi tắt
+        if (markerRef.current) {
+          try {
+            markerRef.current.remove();     // hoặc map.removeLayer(markerRef.current)
+          } catch {}
+          markerRef.current = null;
+        }
 
-  map.locate({
-    watch: true,              // theo dõi liên tục
-    setView: false,
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0,
-  });
+        setIsLocating(false);
+        return;
+      }
 
-  map.on("locationfound", (e) => {
-    const { latlng } = e;
+      // ✅ Nếu đang tắt → bật
+      setIsLocating(true);
 
-    if (markerRef.current) {
-      markerRef.current.setLatLng(latlng);
-    } else {
-      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-    }
+      map.locate({
+        watch: true,
+        setView: false,
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      });
 
-    map.flyTo(latlng, 20, { animate: true });
-  });
+      const onFound = (e) => {
+        const { latlng } = e;
 
-  map.on("locationerror", () => {
-    alert("Không lấy được vị trí.");
-    setIsLocating(false);
-  });
-};
+        if (markerRef.current) {
+          markerRef.current.setLatLng(latlng);
+        } else {
+          markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+        }
+
+        map.flyTo(latlng, 20, { animate: true });
+      };
+
+      const onError = () => {
+        alert("Không lấy được vị trí.");
+
+        // ✅ Tắt trạng thái + dọn marker nếu có
+        if (markerRef.current) {
+          try { markerRef.current.remove(); } catch {}
+          markerRef.current = null;
+        }
+
+        map.off("locationfound", onFound);
+        map.off("locationerror", onError);
+        map.stopLocate();
+        setIsLocating(false);
+      };
+
+      // ✅ Gắn listener theo hàm để dễ off chuẩn
+      map.on("locationfound", onFound);
+      map.on("locationerror", onError);
+    };
 
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
