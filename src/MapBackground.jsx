@@ -270,6 +270,7 @@ const [isLocating, setIsLocating] = useState(false);
   const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
   const markerRef = useRef(null);
 const warnedAccRef = useRef(false);
+const didCenterRef = useRef(false); // ✅ chỉ center 1 lần mỗi lần bật vị trí
   const isLocatingRef = useRef(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
@@ -663,6 +664,7 @@ const showPreciseLocationHint = () => {
 
   setIsLocating(false);
 warnedAccRef.current = false;
+didCenterRef.current = false;
 };
 
     const locateMe = () => {
@@ -700,7 +702,12 @@ warnedAccRef.current = false;
   }
 
   // ✅ đừng ép zoom về 20 nữa, giữ zoom hiện tại để khỏi giật
+  // ✅ chỉ center 1 lần khi vừa bật vị trí
+if (!didCenterRef.current) {
+  didCenterRef.current = true;
   map.panTo(latlng, { animate: true });
+}
+// còn lại chỉ update marker, không kéo map về nữa
 };
 
           const onError = () => {
