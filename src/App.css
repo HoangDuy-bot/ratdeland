@@ -66,21 +66,22 @@
 }
 
 /* ✅ MOBILE */
-/* ===== MOBILE (thiết bị cảm ứng: điện thoại / tablet) ===== */
-@media (hover: none) and (pointer: coarse) {
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
 
   .app {
     flex-direction: column;
     border-radius: 0;
   }
 
+  /* Ẩn sidebar mặc định */
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    height: 100dvh;
+    height: 100dvh;              /* full chiều cao mobile */
     width: min(80vw, 320px);
-    flex: none;              
+    flex: none;                  /* reset flex desktop */
     z-index: 20000;
 
     transform: translateX(-100%);
@@ -88,10 +89,12 @@
     padding: 18px;
   }
 
+  /* Khi mở */
   .sidebar.open {
     transform: translateX(0);
   }
 
+  /* Nền mờ */
   .backdrop {
     position: fixed;
     inset: 0;
@@ -99,11 +102,13 @@
     z-index: 19999;
   }
 
+  /* Map full */
   .main {
     flex: 1;
     height: 100%;
   }
 
+  /* Nút ☰ */
   .menu-btn {
     display: grid;
     position: fixed;
@@ -122,8 +127,8 @@
   }
 }
 
-/* ===== DESKTOP (chuột) ===== */
-@media (hover: hover) and (pointer: fine) {
+/* Ẩn nút ☰ trên desktop */
+@media (min-width: 769px) {
   .menu-btn {
     display: none;
   }
