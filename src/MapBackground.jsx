@@ -582,6 +582,11 @@ map.on("layerremove", (e) => {
           {mapType === "osm" ? "🏙️" : mapType === "sat" ? "🌍" : "🗺️"}
         </button>
 
+        {/* ✅ Badge nằm ngay dưới nút đổi map */}
+        <div className="map-badge-inline">
+          {mapType === "osm" ? "Đường phố" : mapType === "sat" ? "Vệ tinh" : "Map"}
+        </div>
+
         <button className="map-btn" title="Vị trí của tôi" onClick={locateMe}>
           <MyLocationIcon size={20} />
         </button>
@@ -649,8 +654,7 @@ map.on("layerremove", (e) => {
           <div className="pct">{Math.round(opacity * 100)}%</div>
         </div>
       </div>
-
-      <div className="map-badge">{mapType === "osm" ? "Đường phố" : mapType === "sat" ? "Vệ tinh" : "Map"}</div>
+            
     </div>
   );
 }
