@@ -273,6 +273,19 @@ useEffect(() => {
   isLocatingRef.current = isLocating;
 }, [isLocating]);
 
+// thêm ref để stop watchPosition
+const watchIdRef = useRef(null);
+
+// options GPS giống bạn đưa
+const geoOptions = useMemo(
+  () => ({
+    enableHighAccuracy: true,
+    timeout: 5000,
+    maximumAge: 0,
+  }),
+  []
+);
+
   // ✅ chỉ cho phép fitBounds khi đổi tỉnh
   const shouldFitOnNextOverlayRef = useRef(true);
 
@@ -581,15 +594,15 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-    const stopLocating = () => {
+   const stopLocating = () => {
   const map = mapRef.current;
   if (!map) return;
 
-  // gỡ đúng handler đã gắn
-  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
-  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
-
-  map.stopLocate();
+  // ✅ dừng watchPosition
+  if (watchIdRef.current != null) {
+    navigator.geolocation.clearWatch(watchIdRef.current);
+    watchIdRef.current = null;
+  }
 
   // ✅ Xóa marker vị trí khỏi map
   if (markerRef.current) {
@@ -599,57 +612,67 @@ map.on("layerremove", (e) => {
     markerRef.current = null;
   }
 
-  onFoundRef.current = null;
-  onErrorRef.current = null;
-
   setIsLocating(false);
 };
 
     const locateMe = () => {
-          const map = mapRef.current;
-          if (!map) return;
+  const map = mapRef.current;
+  if (!map) return;
 
-          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
-          if (isLocatingRef.current) {
-            stopLocating();
-            return;
-          }
+  // ✅ Nếu đang bật → tắt
+  if (isLocatingRef.current) {
+    stopLocating();
+    return;
+  }
 
-          // ✅ Bật
-          setIsLocating(true);
+  // ✅ Kiểm tra hỗ trợ GPS
+  if (!("geolocation" in navigator)) {
+    alert("Trình duyệt không hỗ trợ định vị (Geolocation).");
+    return;
+  }
 
-          const onFound = (e) => {
-            const { latlng } = e;
+  setIsLocating(true);
 
-            if (markerRef.current) {
-              markerRef.current.setLatLng(latlng);
-            } else {
-              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-            }
+  const onSuccess = (pos) => {
+    const { latitude, longitude, accuracy } = pos.coords;
+    const latlng = L.latLng(latitude, longitude);
 
-            map.flyTo(latlng, 20, { animate: true });
-          };
+    // marker
+    if (markerRef.current) markerRef.current.setLatLng(latlng);
+    else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
 
-          const onError = () => {
-            // muốn im lặng thì bỏ alert
-            // alert("Không lấy được vị trí.");
-            stopLocating();
-          };
+    // zoom tùy theo accuracy (chính xác cao => zoom lớn hơn)
+    // bạn có thể chỉnh logic này
+    const zoom =
+      accuracy <= 10 ? 20 :
+      accuracy <= 25 ? 19 :
+      accuracy <= 50 ? 18 : 17;
 
-          onFoundRef.current = onFound;
-          onErrorRef.current = onError;
+    map.flyTo(latlng, zoom, { animate: true });
 
-          map.on("locationfound", onFound);
-          map.on("locationerror", onError);
+    // nếu muốn debug:
+    // console.log("GPS:", latitude, longitude, "accuracy(m):", accuracy);
+  };
 
-          map.locate({
-            watch: true,
-            setView: false,
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          });
-      };
+  const onError = (err) => {
+    // 1: permission denied, 2: position unavailable, 3: timeout
+    console.warn(`ERROR(${err.code}): ${err.message}`);
+    stopLocating();
+    // nếu muốn báo cho user:
+    // alert("Không lấy được vị trí. Vui lòng bật GPS/cho phép quyền định vị.");
+  };
+
+  // ✅ Lấy 1 lần ngay lập tức (nhanh có tọa độ)
+  navigator.geolocation.getCurrentPosition(onSuccess, onError, geoOptions);
+
+  // ✅ Và theo dõi liên tục (cập nhật khi di chuyển)
+  watchIdRef.current = navigator.geolocation.watchPosition(
+    onSuccess,
+    onError,
+    geoOptions
+  );
+};
+
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
