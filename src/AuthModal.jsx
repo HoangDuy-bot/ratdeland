@@ -113,7 +113,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 99999,
+    zIndex: 9999,
     padding: 16,
   },
   modal: {

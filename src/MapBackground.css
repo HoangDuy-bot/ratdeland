@@ -31,18 +31,7 @@
   place-items: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
-.map-badge-inline{
-  padding: 10px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  background: rgba(15, 23, 42, 0.75);
-  color: #fff;
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-  line-height: 1;
-  white-space: nowrap;
-}
+
 /* ===== Panel ===== */
 .map-panel {
   position: absolute;
@@ -110,31 +99,34 @@
 
 /* ===== MOBILE ===== */
 @media (max-width: 640px) {
-    .map-panel {
-        left: 12px;
-        right: auto;
-        width: min(50vw, 340px);   /* ✅ ~1/2 màn */
-        top: auto;
-        bottom: 12px;              /* ✅ sát dưới */
-        padding: 10px 12px;
-        border-radius: 18px;
-        z-index: 18000;
+  /* Panel nhỏ lại + kéo lên */
+  @media (max-width: 640px) {
+        .map-panel {
+            left: 12px;
+            right: auto;
+            width: min(50vw, 340px);   /* ✅ ~1/2 màn */
+            top: auto;
+            bottom: 12px;              /* ✅ sát dưới */
+            padding: 10px 12px;
+            border-radius: 18px;
+            z-index: 18000;
 
-        max-height: 28vh;          /* ✅ thấp hơn (≈ 2/3 hiện tại) */
-        overflow: auto;
-    }
+            max-height: 28vh;          /* ✅ thấp hơn (≈ 2/3 hiện tại) */
+            overflow: auto;
+        }
 
-    /* toolbar góc trái trên + nằm ngang */
-    .map-toolbar{
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        right: auto;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 10px;
-        z-index: 19000;
+        /* toolbar góc trái trên + nằm ngang */
+        .map-toolbar{
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: auto;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            z-index: 19000;
+        }
     }
 
   /* badge né panel */
