@@ -135,14 +135,14 @@
   }
 }
 
-/* Khi mở sidebar hoặc modal -> khóa toàn bộ vùng map (mobile + desktop) */
-.app.sidebar-open .main,
-.app.modal-open .main {
-  pointer-events: none;
+/* ✅ Khi mở modal login -> ẩn UI của map để khỏi đè lên form */
+.app.modal-open .leaflet-control-container,
+.app.modal-open .map-toolbar,
+.app.modal-open .map-panel {
+  display: none !important;
 }
 
-/* Phòng hờ: khóa luôn cụm control của Leaflet/Geoman */
-.app.sidebar-open .leaflet-control-container,
-.app.modal-open .leaflet-control-container {
+/* ✅ Khi mở modal login -> khóa thao tác map */
+.app.modal-open .main {
   pointer-events: none;
 }

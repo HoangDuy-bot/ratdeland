@@ -38,7 +38,7 @@ export default function AuthModal({ open, onClose }) {
   };
 
   return (
-    <div style={styles.backdrop} onClick={onClose}>
+    <div style={styles.backdrop}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
           <h3 style={{ margin: 0 }}>
