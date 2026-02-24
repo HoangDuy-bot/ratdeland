@@ -581,75 +581,82 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-    const stopLocating = () => {
+    const watchIdRef = useRef(null);
+
+const stopLocating = () => {
   const map = mapRef.current;
   if (!map) return;
 
-  // gỡ đúng handler đã gắn
-  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
-  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
-
-  map.stopLocate();
-
-  // ✅ Xóa marker vị trí khỏi map
-  if (markerRef.current) {
-    try {
-      map.removeLayer(markerRef.current);
-    } catch {}
-    markerRef.current = null;
+  // clear watcher
+  if (watchIdRef.current !== null) {
+    navigator.geolocation.clearWatch(watchIdRef.current);
+    watchIdRef.current = null;
   }
 
-  onFoundRef.current = null;
-  onErrorRef.current = null;
+  // xóa marker khỏi map
+  if (markerRef.current) {
+    map.removeLayer(markerRef.current);
+    markerRef.current = null;
+  }
 
   setIsLocating(false);
 };
 
-    const locateMe = () => {
-          const map = mapRef.current;
-          if (!map) return;
+const locateMe = () => {
+  const map = mapRef.current;
+  if (!map) return;
 
-          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
-          if (isLocatingRef.current) {
-            stopLocating();
-            return;
-          }
+  // nếu đang bật → tắt
+  if (isLocatingRef.current) {
+    stopLocating();
+    return;
+  }
 
-          // ✅ Bật
-          setIsLocating(true);
+  setIsLocating(true);
 
-          const onFound = (e) => {
-            const { latlng } = e;
+  // luôn xóa vị trí cũ trước khi lấy mới
+  if (markerRef.current) {
+    map.removeLayer(markerRef.current);
+    markerRef.current = null;
+  }
 
-            if (markerRef.current) {
-              markerRef.current.setLatLng(latlng);
-            } else {
-              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-            }
+  const options = {
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 20000,
+  };
 
-            map.flyTo(latlng, 20, { animate: true });
-          };
+  const onSuccess = (pos) => {
+    const { latitude, longitude, accuracy } = pos.coords;
 
-          const onError = () => {
-            // muốn im lặng thì bỏ alert
-            // alert("Không lấy được vị trí.");
-            stopLocating();
-          };
+    // chỉ nhận nếu accuracy đủ tốt
+    if (accuracy > 50) return;
 
-          onFoundRef.current = onFound;
-          onErrorRef.current = onError;
+    const latlng = L.latLng(latitude, longitude);
 
-          map.on("locationfound", onFound);
-          map.on("locationerror", onError);
+    if (markerRef.current) {
+      markerRef.current.setLatLng(latlng);
+    } else {
+      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+    }
 
-          map.locate({
-            watch: true,
-            setView: false,
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          });
-      };
+    map.flyTo(latlng, 19);
+  };
+
+  const onError = () => {
+    stopLocating();
+  };
+
+  // 🔥 ép lấy fix mới trước
+  navigator.geolocation.getCurrentPosition(onSuccess, onError, options);
+
+  // 🔄 sau đó mới watch
+  watchIdRef.current = navigator.geolocation.watchPosition(
+    onSuccess,
+    onError,
+    options
+  );
+};
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
