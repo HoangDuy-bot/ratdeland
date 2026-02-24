@@ -585,13 +585,29 @@ map.on("layerremove", (e) => {
   const map = mapRef.current;
   if (!map) return;
 
-  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
-  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
-
   map.stopLocate();
 
-  onFoundRef.current = null;
-  onErrorRef.current = null;
+  if (onFoundRef.current) {
+    map.off("locationfound", onFoundRef.current);
+    onFoundRef.current = null;
+  }
+
+  if (onErrorRef.current) {
+    map.off("locationerror", onErrorRef.current);
+    onErrorRef.current = null;
+  }
+
+  // ✅ Xoá marker nếu có
+  if (markerRef.current) {
+    map.removeLayer(markerRef.current);
+    markerRef.current = null;
+  }
+
+  // ✅ THÊM ĐOẠN NÀY NGAY TẠI ĐÂY
+  if (map.__accCircle) {
+    map.removeLayer(map.__accCircle);
+    map.__accCircle = null;
+  }
 
   setIsLocating(false);
 };
@@ -607,33 +623,62 @@ map.on("layerremove", (e) => {
 
   setIsLocating(true);
 
-  const ACC_OK = 60;        // ngưỡng “đủ chuẩn” để auto zoom (m)
-  let hasCentered = false;  // chỉ zoom 1 lần khi đủ chuẩn
+  const ACC_CENTER = 20;     // ✅ mục tiêu 5–20m: chỉ center khi <= 20m
+  const ACC_ACCEPT = 120;    // ✅ bỏ qua fix quá tệ (>120m)
+
+  let hasCentered = false;
+  let bestAcc = Infinity;
+
+  // thêm circle thể hiện accuracy
+  if (!map.__accCircle) map.__accCircle = null;
 
   const onFound = (e) => {
     const { latlng, accuracy } = e;
 
-    // luôn update marker theo vị trí mới (để bạn đi 100m là thấy chạy)
+    if (typeof accuracy !== "number") return;
+
+    // 1) Nếu fix quá tệ thì bỏ qua (đỡ nhảy)
+    if (accuracy > ACC_ACCEPT) return;
+
+    // 2) Chỉ update nếu fix tốt hơn fix trước (giảm noise)
+    if (accuracy >= bestAcc && bestAcc !== Infinity) {
+      // vẫn cho marker chạy nếu bạn muốn "theo dõi" bất kể accuracy:
+      // (bạn có thể bỏ comment 2 dòng dưới để luôn chạy)
+      // markerRef.current?.setLatLng(latlng);
+      // map.__accCircle?.setLatLng(latlng).setRadius(accuracy);
+      return;
+    }
+
+    bestAcc = accuracy;
+
+    // 3) Update marker
     if (markerRef.current) markerRef.current.setLatLng(latlng);
     else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
 
-    // chỉ flyTo khi accuracy đủ tốt, tránh “bám theo vùng rộng”
-    if (!hasCentered && typeof accuracy === "number" && accuracy <= ACC_OK) {
-      map.flyTo(latlng, 19, { animate: true }); // 19 thường đủ chi tiết, đỡ giật hơn 20
+    // 4) Update accuracy circle
+    if (map.__accCircle) {
+      map.__accCircle.setLatLng(latlng).setRadius(accuracy);
+    } else {
+      map.__accCircle = L.circle(latlng, {
+        radius: accuracy,
+        weight: 2,
+        fillOpacity: 0.15,
+      }).addTo(map);
+    }
+
+    // 5) Chỉ bay tới khi accuracy đủ chuẩn (<= 20m)
+    if (!hasCentered && accuracy <= ACC_CENTER) {
+      map.flyTo(latlng, 19, { animate: true });
       hasCentered = true;
     }
   };
 
   const onError = (e) => {
-    // code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT (thường gặp)
     if (e?.code === 1) {
-      // user từ chối quyền => dừng thật
       stopLocating();
       alert("Bạn đã từ chối quyền vị trí.");
       return;
     }
-
-    // TIMEOUT / unavailable => KHÔNG stop, để watch tiếp tục chờ fix mới
     console.log("location error:", e?.message || e);
   };
 
@@ -647,10 +692,12 @@ map.on("layerremove", (e) => {
     watch: true,
     setView: false,
     enableHighAccuracy: true,
-    timeout: 60000,   // ✅ tăng 60s (rất quan trọng)
-    maximumAge: 0,    // ✅ không dùng cache cũ
+    timeout: 60000,
+    maximumAge: 0,
   });
 };
+
+
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
