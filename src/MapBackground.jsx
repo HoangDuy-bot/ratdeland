@@ -573,23 +573,118 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-  const locateMe = () => {
-    const map = mapRef.current;
-    if (!map) return;
+// ✅ helper: đọc trạng thái quyền vị trí (nếu browser hỗ trợ)
+    async function getGeoPermissionState() {
+      if (!navigator.permissions?.query) return "unknown"; // Safari/1 số browser không support
+      try {
+        const res = await navigator.permissions.query({ name: "geolocation" });
+        return res.state; // "granted" | "prompt" | "denied"
+      } catch {
+        return "unknown";
+      }
+    }
 
-    map.locate({ setView: false, enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    // ✅ helper: zoom theo độ chính xác (accuracy mét)
+    function zoomByAccuracy(accMeters) {
+      if (!accMeters || Number.isNaN(accMeters)) return 18;
+      if (accMeters <= 10) return 20;
+      if (accMeters <= 25) return 19;
+      if (accMeters <= 50) return 18;
+      if (accMeters <= 100) return 17;
+      return 16;
+    }
 
-    map.once("locationfound", (e) => {
-      const { latlng } = e;
-      if (markerRef.current) markerRef.current.setLatLng(latlng);
-      else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-      map.flyTo(latlng, 20, { animate: true });
+  const locateMe = async () => {
+  const map = mapRef.current;
+  if (!map) return;
+
+  // ✅ Browser không hỗ trợ geolocation
+  if (!navigator.geolocation) {
+    alert("Thiết bị/trình duyệt không hỗ trợ định vị.");
+    return;
+  }
+
+  // ✅ Kiểm tra trạng thái quyền trước để UX rõ ràng
+  const perm = await getGeoPermissionState();
+
+  if (perm === "denied") {
+    alert(
+      "Bạn đang tắt quyền vị trí.\n\n" +
+        "Hãy bật vị trí, rồi thử lại."
+    );
+    return;
+  }
+
+  if (perm === "prompt") {
+    // ✅ Lúc này browser sẽ hỏi, mình báo trước để user hiểu
+    alert("Vui lòng bấm “Cho phép/Allow” ở lần này.");
+  }
+
+  // ✅ Tạo 1 vòng locate “chuẩn”: lấy vị trí mới nhất + chính xác
+  const locateOnce = () =>
+    new Promise((resolve, reject) => {
+      map.once("locationfound", resolve);
+      map.once("locationerror", reject);
+
+      map.locate({
+        setView: false,
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0, // ✅ không dùng cache cũ
+        watch: false,
+      });
     });
 
-    map.once("locationerror", () => {
-      alert("Không lấy được vị trí. Hãy bật GPS / cho phép trình duyệt truy cập vị trí.");
-    });
-  };
+  try {
+    // ✅ Thử lấy vị trí lần 1
+    const e1 = await locateOnce();
+    const { latlng, accuracy } = e1;
+
+    // ✅ marker + vòng tròn accuracy (đẹp + trực quan)
+    if (!markerRef.current) {
+      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+    } else {
+      markerRef.current.setLatLng(latlng);
+    }
+
+    // (Tuỳ chọn) vẽ vòng tròn accuracy để user hiểu độ lệch
+    if (map.__accCircle) {
+      map.__accCircle.setLatLng(latlng).setRadius(accuracy);
+    } else {
+      map.__accCircle = L.circle(latlng, {
+        radius: accuracy,
+        interactive: false,
+      }).addTo(map);
+    }
+
+    // ✅ zoom theo accuracy
+    const z = zoomByAccuracy(accuracy);
+    map.flyTo(latlng, z, { animate: true });
+
+    // ✅ (Option) Nếu accuracy quá xấu (vd > 80m) thì thử thêm 1 lần nữa cho chắc
+    // Trên mobile thường lần 2 sẽ tốt hơn
+    if (accuracy > 80) {
+      try {
+        const e2 = await locateOnce();
+        const { latlng: lat2, accuracy: acc2 } = e2;
+
+        markerRef.current.setLatLng(lat2);
+        map.__accCircle.setLatLng(lat2).setRadius(acc2);
+
+        const z2 = zoomByAccuracy(acc2);
+        map.flyTo(lat2, z2, { animate: true });
+      } catch {
+        // bỏ qua nếu lần 2 fail
+      }
+    }
+  } catch (err) {
+    // ✅ Leaflet locationerror thường có message/code
+    const msg =
+      err?.message ||
+      "Không lấy được vị trí. Hãy bật vị trí và cho phép trình duyệt truy cập vị trí.";
+    alert(msg);
+  }
+};
 
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
