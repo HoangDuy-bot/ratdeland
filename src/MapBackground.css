@@ -1,6 +1,3 @@
-/* =========================
-   Map container
-========================= */
 .map-wrap {
   position: absolute;
   inset: 0;
@@ -11,14 +8,12 @@
   inset: 0;
 }
 
-/* =========================
-   Top controls (Satellite / Locate / Badge)
-========================= */
+/* ===== Toolbar ===== */
 .map-toolbar {
   position: absolute;
   top: 14px;
   right: 14px;
-  z-index: 19000;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -35,10 +30,8 @@
   display: grid;
   place-items: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  user-select: none;
 }
-
-.map-badge-inline {
+.map-badge-inline{
   padding: 10px 12px;
   border-radius: 16px;
   font-size: 12px;
@@ -49,19 +42,13 @@
   place-items: center;
   line-height: 1;
   white-space: nowrap;
-
-  /* ✅ không chặn bấm icon bên cạnh */
-  pointer-events: none;
 }
-
-/* =========================
-   Panel (Province / Area / Overlay / Opacity)
-========================= */
+/* ===== Panel ===== */
 .map-panel {
   position: absolute;
   top: 14px;
   left: 14px;
-  z-index: 18000;
+  z-index: 9999;
 
   width: 190px;
   padding: 12px;
@@ -107,39 +94,71 @@
   opacity: 0.8;
 }
 
-/* =========================
-   MOBILE tuning
-========================= */
+/* ===== Badge ===== */
+.map-badge {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 9999;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  color: white;
+  backdrop-filter: blur(6px);
+}
+
+/* ===== MOBILE ===== */
 @media (max-width: 640px) {
-  /* Panel: sát trái dưới, rộng ~1/2 màn, thấp hơn */
-  .map-panel {
-    left: 12px;
-    right: auto;
+    .map-panel {
+        left: 12px;
+        right: auto;
+        width: min(50vw, 340px);   /* ✅ ~1/2 màn */
+        top: auto;
+        bottom: 12px;              /* ✅ sát dưới */
+        padding: 10px 12px;
+        border-radius: 18px;
+        z-index: 18000;
 
-    width: min(52vw, 360px);   /* ✅ khoảng 1/2 màn */
-    top: auto;
-    bottom: 12px;
+        max-height: 28vh;          /* ✅ thấp hơn (≈ 2/3 hiện tại) */
+        overflow: auto;
+    }
 
-    padding: 10px 12px;
-    border-radius: 18px;
+    /* toolbar góc trái trên + nằm ngang */
+    .map-toolbar{
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        z-index: 19000;
+    }
 
-    max-height: 28vh;          /* ✅ thấp hơn */
-    overflow: auto;
+  /* badge né panel */
+  .map-badge {
+    bottom: 70px;
+    right: 12px;
   }
 
-  /* Toolbar: góc trái trên, nằm ngang */
-  .map-toolbar {
-    top: 12px;
-    left: 12px;
-    right: auto;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* Geoman (draw/remove): góc phải trên, sát mép gọn */
+  /* ✅ kéo geoman (tool vẽ/xoá) lên góc phải trên */
   .leaflet-top.leaflet-right {
     top: 12px;
     right: 12px;
   }
+  
+  .map-badge-inline{
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  line-height: 1;
+    }
+
 }

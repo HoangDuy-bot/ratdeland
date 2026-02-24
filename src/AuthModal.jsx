@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "./supabaseClient";
 
 export default function AuthModal({ open, onClose }) {
@@ -8,13 +8,6 @@ export default function AuthModal({ open, onClose }) {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-  if (!open) return;
-  const prev = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
-  return () => { document.body.style.overflow = prev; };
-  }, [open]);
 
   if (!open) return null;
 
