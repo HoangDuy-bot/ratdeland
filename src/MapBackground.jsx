@@ -585,19 +585,10 @@ map.on("layerremove", (e) => {
   const map = mapRef.current;
   if (!map) return;
 
-  // gỡ đúng handler đã gắn
   if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
   if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
 
   map.stopLocate();
-
-  // ✅ Xóa marker vị trí khỏi map
-  if (markerRef.current) {
-    try {
-      map.removeLayer(markerRef.current);
-    } catch {}
-    markerRef.current = null;
-  }
 
   onFoundRef.current = null;
   onErrorRef.current = null;
@@ -606,50 +597,60 @@ map.on("layerremove", (e) => {
 };
 
     const locateMe = () => {
-          const map = mapRef.current;
-          if (!map) return;
+  const map = mapRef.current;
+  if (!map) return;
 
-          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
-          if (isLocatingRef.current) {
-            stopLocating();
-            return;
-          }
+  if (isLocatingRef.current) {
+    stopLocating();
+    return;
+  }
 
-          // ✅ Bật
-          setIsLocating(true);
+  setIsLocating(true);
 
-          const onFound = (e) => {
-            const { latlng } = e;
+  const ACC_OK = 60;        // ngưỡng “đủ chuẩn” để auto zoom (m)
+  let hasCentered = false;  // chỉ zoom 1 lần khi đủ chuẩn
 
-            if (markerRef.current) {
-              markerRef.current.setLatLng(latlng);
-            } else {
-              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-            }
+  const onFound = (e) => {
+    const { latlng, accuracy } = e;
 
-            map.flyTo(latlng, 20, { animate: true });
-          };
+    // luôn update marker theo vị trí mới (để bạn đi 100m là thấy chạy)
+    if (markerRef.current) markerRef.current.setLatLng(latlng);
+    else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
 
-          const onError = () => {
-            // muốn im lặng thì bỏ alert
-            // alert("Không lấy được vị trí.");
-            stopLocating();
-          };
+    // chỉ flyTo khi accuracy đủ tốt, tránh “bám theo vùng rộng”
+    if (!hasCentered && typeof accuracy === "number" && accuracy <= ACC_OK) {
+      map.flyTo(latlng, 19, { animate: true }); // 19 thường đủ chi tiết, đỡ giật hơn 20
+      hasCentered = true;
+    }
+  };
 
-          onFoundRef.current = onFound;
-          onErrorRef.current = onError;
+  const onError = (e) => {
+    // code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT (thường gặp)
+    if (e?.code === 1) {
+      // user từ chối quyền => dừng thật
+      stopLocating();
+      alert("Bạn đã từ chối quyền vị trí.");
+      return;
+    }
 
-          map.on("locationfound", onFound);
-          map.on("locationerror", onError);
+    // TIMEOUT / unavailable => KHÔNG stop, để watch tiếp tục chờ fix mới
+    console.log("location error:", e?.message || e);
+  };
 
-          map.locate({
-            watch: true,
-            setView: false,
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          });
-      };
+  onFoundRef.current = onFound;
+  onErrorRef.current = onError;
+
+  map.on("locationfound", onFound);
+  map.on("locationerror", onError);
+
+  map.locate({
+    watch: true,
+    setView: false,
+    enableHighAccuracy: true,
+    timeout: 60000,   // ✅ tăng 60s (rất quan trọng)
+    maximumAge: 0,    // ✅ không dùng cache cũ
+  });
+};
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
