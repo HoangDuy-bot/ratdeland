@@ -123,3 +123,16 @@
   color: white;
   border: 1px solid #2563eb;
 }
+
+/* GPS dot pulse (optional) */
+.gps-dot {
+  border-radius: 50%;
+  box-shadow: 0 0 0 rgba(51, 136, 255, 0.35);
+  animation: gpsPulse 2s infinite;
+}
+
+@keyframes gpsPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(51, 136, 255, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(51, 136, 255, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(51, 136, 255, 0); }
+}
