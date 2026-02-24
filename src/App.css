@@ -67,27 +67,60 @@
 
 /* ✅ MOBILE */
 @media (max-width: 640px) {
-  /* Ẩn subtitle */
-  .brand .subtitle { display: none; }
+  .app {
+    flex-direction: column;
+    border-radius: 0;
+  }
 
-  /* Dồn nội dung lên trên */
+  /* ✅ Ẩn sidebar mặc định */
   .sidebar {
-    justify-content: flex-start;   /* thay vì space-between */
-    gap: 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(86vw, 320px);
+    z-index: 20000;
+
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+    padding: 14px;
+    border-radius: 0;
   }
 
-  .auth {
-    margin-top: 6px;
+  /* ✅ Khi mở menu */
+  .sidebar.open {
+    transform: translateX(0);
   }
 
-  .status {
-    margin: 0 0 8px 0;   /* sát lên */
-    font-size: 13px;
+  /* ✅ nền mờ phía sau menu */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 19999;
   }
 
-  .btn {
-    margin-top: 6px;     /* sát lên */
-    padding: 10px 12px;
-    font-size: 14px;
+  /* map full màn hình */
+  .main {
+    flex: 1;
+    height: 100%;
+  }
+
+  /* nút menu nổi */
+  .menu-btn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 21000;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
   }
 }
