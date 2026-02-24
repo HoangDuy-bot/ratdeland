@@ -257,7 +257,7 @@ function updateMeasureLabel(map, layer) {
   }
 }
 
-export default function MapBackground({ user, onRequireAuth }) {
+export default function MapBackground({ user, onRequireAuth, uiLocked }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
@@ -308,6 +308,37 @@ export default function MapBackground({ user, onRequireAuth }) {
     return { osm, sat, hot };
   }, []);
 
+  useEffect(() => {
+  const map = mapRef.current;
+  if (!map) return;
+
+  if (uiLocked) {
+    // khóa thao tác bản đồ
+    map.dragging?.disable();
+    map.scrollWheelZoom?.disable();
+    map.doubleClickZoom?.disable();
+    map.touchZoom?.disable();
+    map.boxZoom?.disable();
+    map.keyboard?.disable();
+
+    // khóa các mode của Geoman (nếu có)
+    if (map.pm) {
+      map.pm.disableDraw?.();
+      map.pm.disableGlobalEditMode?.();
+      map.pm.disableGlobalDragMode?.();
+      map.pm.disableGlobalRemovalMode?.();
+    }
+  } else {
+    // mở lại thao tác
+    map.dragging?.enable();
+    map.scrollWheelZoom?.enable();
+    map.doubleClickZoom?.enable();
+    map.touchZoom?.enable();
+    map.boxZoom?.enable();
+    map.keyboard?.enable();
+  }
+}, [uiLocked]);
+  
   // init map
   useEffect(() => {
     if (mapRef.current) return;
@@ -654,7 +685,7 @@ map.on("layerremove", (e) => {
           <div className="pct">{Math.round(opacity * 100)}%</div>
         </div>
       </div>
-            
+
     </div>
   );
 }

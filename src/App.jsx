@@ -72,7 +72,11 @@ export default function App() {
 
       {/* Map */}
       <div className="main" onClick={() => setSidebarOpen(false)}>
-        <MapBackground user={user} onRequireAuth={() => setAuthOpen(true)} />
+        <MapBackground
+            user={user}
+            onRequireAuth={() => setAuthOpen(true)}
+            uiLocked={sidebarOpen || authOpen}
+          />
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
