@@ -265,6 +265,14 @@ const [isLocating, setIsLocating] = useState(false);
   const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
   const markerRef = useRef(null);
 
+  const isLocatingRef = useRef(false);
+const onFoundRef = useRef(null);
+const onErrorRef = useRef(null);
+
+useEffect(() => {
+  isLocatingRef.current = isLocating;
+}, [isLocating]);
+
   // ✅ chỉ cho phép fitBounds khi đổi tỉnh
   const shouldFitOnNextOverlayRef = useRef(true);
 
@@ -573,71 +581,75 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
+    const stopLocating = () => {
+  const map = mapRef.current;
+  if (!map) return;
+
+  // gỡ đúng handler đã gắn
+  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
+  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
+
+  map.stopLocate();
+
+  // ✅ Xóa marker vị trí khỏi map
+  if (markerRef.current) {
+    try {
+      map.removeLayer(markerRef.current);
+    } catch {}
+    markerRef.current = null;
+  }
+
+  onFoundRef.current = null;
+  onErrorRef.current = null;
+
+  setIsLocating(false);
+};
+
     const locateMe = () => {
-      const map = mapRef.current;
-      if (!map) return;
+          const map = mapRef.current;
+          if (!map) return;
 
-      // ✅ Nếu đang bật → tắt
-      if (isLocating) {
-        map.off("locationfound");
-        map.off("locationerror");
-        map.stopLocate();
+          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
+          if (isLocatingRef.current) {
+            stopLocating();
+            return;
+          }
 
-        // ✅ Xóa marker vị trí khỏi map khi tắt
-        if (markerRef.current) {
-          try {
-            markerRef.current.remove();     // hoặc map.removeLayer(markerRef.current)
-          } catch {}
-          markerRef.current = null;
-        }
+          // ✅ Bật
+          setIsLocating(true);
 
-        setIsLocating(false);
-        return;
-      }
+          const onFound = (e) => {
+            const { latlng } = e;
 
-      // ✅ Nếu đang tắt → bật
-      setIsLocating(true);
+            if (markerRef.current) {
+              markerRef.current.setLatLng(latlng);
+            } else {
+              markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+            }
 
-      map.locate({
-        watch: true,
-        setView: false,
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
+            map.flyTo(latlng, 20, { animate: true });
+          };
 
-      const onFound = (e) => {
-        const { latlng } = e;
+          const onError = () => {
+            // muốn im lặng thì bỏ alert
+            // alert("Không lấy được vị trí.");
+            stopLocating();
+          };
 
-        if (markerRef.current) {
-          markerRef.current.setLatLng(latlng);
-        } else {
-          markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-        }
+          onFoundRef.current = onFound;
+          onErrorRef.current = onError;
 
-        map.flyTo(latlng, 20, { animate: true });
+          map.on("locationfound", onFound);
+          map.on("locationerror", onError);
+
+          map.locate({
+            watch: true,
+            setView: false,
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
       };
-
-      const onError = () => {
-        alert("Không lấy được vị trí.");
-
-        // ✅ Tắt trạng thái + dọn marker nếu có
-        if (markerRef.current) {
-          try { markerRef.current.remove(); } catch {}
-          markerRef.current = null;
-        }
-
-        map.off("locationfound", onFound);
-        map.off("locationerror", onError);
-        map.stopLocate();
-        setIsLocating(false);
-      };
-
-      // ✅ Gắn listener theo hàm để dễ off chuẩn
-      map.on("locationfound", onFound);
-      map.on("locationerror", onError);
-    };
-
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
