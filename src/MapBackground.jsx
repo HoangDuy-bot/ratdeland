@@ -268,7 +268,9 @@ const [isLocating, setIsLocating] = useState(false);
   const isLocatingRef = useRef(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
-
+const lastFixRef = useRef(null);     // { latlng, ts }
+const smoothRef = useRef(null);      // latlng đã làm mượt
+const didFlyRef = useRef(false);     // chỉ flyTo lần đầu (hoặc khi lệch xa)
 useEffect(() => {
   isLocatingRef.current = isLocating;
 }, [isLocating]);
@@ -587,17 +589,20 @@ const stopLocating = () => {
   const map = mapRef.current;
   if (!map) return;
 
-  // clear watcher
   if (watchIdRef.current !== null) {
     navigator.geolocation.clearWatch(watchIdRef.current);
     watchIdRef.current = null;
   }
 
-  // xóa marker khỏi map
   if (markerRef.current) {
     map.removeLayer(markerRef.current);
     markerRef.current = null;
   }
+
+  // ✅ reset smoothing state
+  lastFixRef.current = null;
+  smoothRef.current = null;
+  didFlyRef.current = false;
 
   setIsLocating(false);
 };
@@ -609,6 +614,7 @@ const locateMe = () => {
   // nếu đang bật → tắt
   if (isLocatingRef.current) {
     stopLocating();
+    
     return;
   }
 
@@ -626,25 +632,56 @@ const locateMe = () => {
     timeout: 20000,
   };
 
-  const onSuccess = (pos) => {
-  const { latitude, longitude, accuracy } = pos.coords;
+ const onSuccess = (pos) => {
+  const map = mapRef.current;
+  if (!map) return;
 
-  console.log("✅ GEO OK:", {
-    latitude,
-    longitude,
-    accuracy,
-    timestamp: pos.timestamp,
-  });
+  const { latitude, longitude } = pos.coords;
+  const ts = pos.timestamp || Date.now();
 
-  const latlng = L.latLng(latitude, longitude);
+  const raw = L.latLng(latitude, longitude);
 
-  if (markerRef.current) {
-    markerRef.current.setLatLng(latlng);
-  } else {
-    markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+  // ✅ 1) Bỏ update quá dày (debounce theo thời gian)
+  const last = lastFixRef.current;
+  if (last && ts - last.ts < 800) return; // <0.8s thì bỏ
+
+  // ✅ 2) Bỏ rung nhỏ tại chỗ (deadzone theo khoảng cách)
+  if (last && map.distance(last.latlng, raw) < 4) {
+    lastFixRef.current = { latlng: raw, ts }; // vẫn cập nhật ts để khỏi kẹt
+    return;
   }
 
-  map.flyTo(latlng, 19, { animate: true });
+  lastFixRef.current = { latlng: raw, ts };
+
+  // ✅ 3) Làm mượt (exponential smoothing)
+  const alpha = 0.25; // 0.15–0.35: nhỏ = mượt hơn nhưng trễ hơn
+  if (!smoothRef.current) smoothRef.current = raw;
+  else {
+    const s = smoothRef.current;
+    smoothRef.current = L.latLng(
+      s.lat + (raw.lat - s.lat) * alpha,
+      s.lng + (raw.lng - s.lng) * alpha
+    );
+  }
+
+  const p = smoothRef.current;
+
+  // ✅ 4) Update marker
+  if (markerRef.current) markerRef.current.setLatLng(p);
+  else markerRef.current = L.marker(p, { icon: pinIcon }).addTo(map);
+
+  // ✅ 5) Chỉ flyTo lần đầu, hoặc khi lệch xa (tránh bay liên tục gây giật)
+  if (!didFlyRef.current) {
+    map.flyTo(p, 19, { animate: true });
+    didFlyRef.current = true;
+  } else {
+    // nếu user ra khỏi màn hình nhiều thì mới bay lại
+    const center = map.getCenter();
+    const distFromCenter = map.distance(center, p);
+    if (distFromCenter > 80) {
+      map.flyTo(p, map.getZoom(), { animate: true });
+    }
+  }
 };
 
   const onError = (err) => {
