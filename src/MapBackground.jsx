@@ -260,7 +260,7 @@ function updateMeasureLabel(map, layer) {
 export default function MapBackground({ user, onRequireAuth, uiLocked }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
-
+const [isLocating, setIsLocating] = useState(false);
   const baseLayerRef = useRef(null);
   const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
   const markerRef = useRef(null);
@@ -574,22 +574,46 @@ map.on("layerremove", (e) => {
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
   const locateMe = () => {
-    const map = mapRef.current;
-    if (!map) return;
+  const map = mapRef.current;
+  if (!map) return;
 
-    map.locate({ setView: false, enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  // ✅ Nếu đang bật → tắt
+  if (isLocating) {
+    map.off("locationfound");
+    map.off("locationerror");
+    map.stopLocate();
+    setIsLocating(false);    
+    return;
+  }
 
-    map.once("locationfound", (e) => {
-      const { latlng } = e;
-      if (markerRef.current) markerRef.current.setLatLng(latlng);
-      else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-      map.flyTo(latlng, 20, { animate: true });
-    });
+  // ✅ Nếu đang tắt → bật
+  setIsLocating(true);
 
-    map.once("locationerror", () => {
-      alert("Không lấy được vị trí. Hãy bật GPS / cho phép trình duyệt truy cập vị trí.");
-    });
-  };
+  map.locate({
+    watch: true,              // theo dõi liên tục
+    setView: false,
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0,
+  });
+
+  map.on("locationfound", (e) => {
+    const { latlng } = e;
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng(latlng);
+    } else {
+      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+    }
+
+    map.flyTo(latlng, 20, { animate: true });
+  });
+
+  map.on("locationerror", () => {
+    alert("Không lấy được vị trí.");
+    setIsLocating(false);
+  });
+};
 
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
@@ -618,8 +642,12 @@ map.on("layerremove", (e) => {
           {mapType === "osm" ? "Đường phố" : mapType === "sat" ? "Vệ tinh" : "Map"}
         </div>
 
-        <button className="map-btn" title="Vị trí của tôi" onClick={locateMe}>
-          <MyLocationIcon size={20} />
+       <button
+            className={`map-btn ${isLocating ? "active" : ""}`}
+            title="Vị trí của tôi"
+            onClick={locateMe}
+          >
+            <MyLocationIcon size={20} />
         </button>
       </div>
 

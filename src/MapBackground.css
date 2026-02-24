@@ -31,11 +31,7 @@
   place-items: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
-.map-btn.active {
-  background: #1a73e8;
-  color: #fff;
-  border-color: rgba(26, 115, 232, 0.6);
-}
+
 /* ===== Panel ===== */
 .map-panel {
   position: absolute;
@@ -121,4 +117,9 @@
   .row { margin-bottom: 8px; }
   .select { height: 32px; font-size: 12.5px; }
   .label { font-size: 12px; }
+}
+.map-btn.active {
+  background: #2563eb;
+  color: white;
+  border: 1px solid #2563eb;
 }
