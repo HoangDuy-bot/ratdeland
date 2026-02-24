@@ -261,6 +261,11 @@ export default function MapBackground({ user, onRequireAuth, uiLocked }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
+  // ✅ vị trí và di chuyển
+  const [tracking, setTracking] = useState(false);
+  const watchIdRef = useRef(null);
+  const accuracyCircleRef = useRef(null);
+
   const baseLayerRef = useRef(null);
   const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
   const markerRef = useRef(null);
@@ -344,13 +349,13 @@ export default function MapBackground({ user, onRequireAuth, uiLocked }) {
     if (mapRef.current) return;
 
     const map = L.map(mapEl.current, {
-  zoomControl: false,
-  attributionControl: false,
-  preferCanvas: true,
+    zoomControl: false,
+    attributionControl: false,
+    preferCanvas: true,
 
-  // ✅ thêm renderer tolerance để dễ click vào line
-  renderer: L.canvas({ tolerance: 10 }), // thử 10 -> 15 nếu vẫn khó
-});
+    // ✅ thêm renderer tolerance để dễ click vào line
+    renderer: L.canvas({ tolerance: 10 }), // thử 10 -> 15 nếu vẫn khó
+    });
 
 
     const dv = selectedProvince?.defaultView ?? { lat: 10.8231, lng: 106.6297, zoom: 12 };
@@ -363,8 +368,8 @@ export default function MapBackground({ user, onRequireAuth, uiLocked }) {
 
     // ✅ Bật công cụ đo (Geoman)
    // ✅ Import Geoman NGAY SAU khi tạo map
-import("@geoman-io/leaflet-geoman-free").then(() => {
-  if (!map.pm) {
+    import("@geoman-io/leaflet-geoman-free").then(() => {
+    if (!map.pm) {
     console.error("Geoman chưa load được!");
     return;
   }
@@ -453,6 +458,7 @@ map.on("layerremove", (e) => {
     window.addEventListener("resize", onResize);
 
     return () => {
+      stopTracking(); // ✅ clearWatch + remove marker/circle
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       map.remove();
@@ -573,53 +579,95 @@ map.on("layerremove", (e) => {
 
   const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-  const locateMe = () => {
-  const map = mapRef.current;
-  if (!map) return;
+      const startTracking = () => {
+      const map = mapRef.current;
+      if (!map) return;
 
-  // Hiển thị thông báo nhỏ để người dùng biết đang quét (tùy chọn)
-  // alert("Đang xác định vị trí chính xác của bạn...");
+      if (!("geolocation" in navigator)) {
+        alert("Trình duyệt không hỗ trợ GPS (Geolocation).");
+        return;
+      }
 
-  map.locate({ 
-    setView: false, 
-    enableHighAccuracy: true, // Ép dùng GPS thay vì Wifi/Cell Tower nếu có thể
-    timeout: 15000,           // Tăng thời gian chờ lên 15s để GPS kịp fix vị trí
-    maximumAge: 0             // Không dùng vị trí cũ lưu trong bộ nhớ đệm
-  });
+      // Nếu đang watch rồi thì không tạo lại
+      if (watchIdRef.current != null) return;
 
-  // Sự kiện khi tìm thấy vị trí
-  map.once("locationfound", (e) => {
-    const { latlng, accuracy } = e;
+      const id = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          const latlng = L.latLng(latitude, longitude);
 
-    // Log để bạn kiểm tra độ sai số (đơn vị mét)
-    console.log(`Độ chính xác: ${accuracy} mét`);
+          // marker vị trí
+          if (markerRef.current) markerRef.current.setLatLng(latlng);
+          else markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
 
-    // Xử lý marker hiển thị vị trí
-    if (markerRef.current) {
-      markerRef.current.setLatLng(latlng);
-    } else {
-      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-    }
+          // vòng tròn accuracy (tuỳ bạn có muốn)
+          if (accuracyCircleRef.current) {
+            accuracyCircleRef.current.setLatLng(latlng).setRadius(accuracy);
+          } else {
+            accuracyCircleRef.current = L.circle(latlng, {
+              radius: accuracy,
+              interactive: false,
+            }).addTo(map);
+          }
 
-    // Zoom sát vào vị trí tìm được
-    // Nếu độ chính xác tốt (< 100m), zoom sâu (20), nếu kém thì zoom vừa (16)
-    const zoomLevel = accuracy < 100 ? 18 : 16;
-    map.flyTo(latlng, zoomLevel, { 
-      animate: true,
-      duration: 1.5 // làm cho hiệu ứng mượt hơn
-    });
-  });
+          // chỉ flyTo lần đầu để khỏi giật màn hình liên tục
+          if (!map.__didFlyToMe) {
+            map.__didFlyToMe = true;
+            map.flyTo(latlng, 18, { animate: true });
+          }
+        },
+        (err) => {
+          // tắt tracking nếu lỗi
+          console.log("watchPosition error:", err);
+          stopTracking();
 
-  // Sự kiện khi lỗi
-  map.once("locationerror", (err) => {
-    console.error("Location error:", err);
-    if (err.code === 1) {
-      alert("Bạn đã từ chối quyền truy cập vị trí. Hãy bật lại trong cài đặt trình duyệt.");
-    } else {
-      alert("Không thể xác định vị trí. Vui lòng kiểm tra kết nối mạng và GPS.");
-    }
-  });
-};
+          if (err.code === 1) {
+            alert("Bạn đã từ chối quyền vị trí. Hãy bật quyền Location cho trang này.");
+          } else if (err.code === 2) {
+            alert("Không lấy được vị trí (GPS/Wi-Fi yếu).");
+          } else {
+            alert("Lỗi lấy vị trí. Thử lại sau.");
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 1000,     // cache tối đa 1s
+          timeout: 10000,       // chờ tối đa 10s cho 1 lần update
+        }
+      );
+
+      watchIdRef.current = id;
+      setTracking(true);
+    };
+
+    const stopTracking = () => {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+
+      // xoá marker / circle nếu bạn muốn “bỏ chọn” là ẩn luôn
+      if (markerRef.current) {
+        try { markerRef.current.remove(); } catch {}
+        markerRef.current = null;
+      }
+      if (accuracyCircleRef.current) {
+        try { accuracyCircleRef.current.remove(); } catch {}
+        accuracyCircleRef.current = null;
+      }
+
+      const map = mapRef.current;
+      if (map) map.__didFlyToMe = false;
+
+      setTracking(false);
+    };
+
+    const toggleTracking = () => {
+      if (tracking) stopTracking();
+      else startTracking();
+    };
+
+
 
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
@@ -639,8 +687,12 @@ map.on("layerremove", (e) => {
       <div ref={mapEl} className="map-canvas" />
 
       <div className="map-toolbar">
-        <button className="map-btn" title="Đổi loại bản đồ" onClick={cycleMapType}>
-          {mapType === "osm" ? "🏙️" : mapType === "sat" ? "🌍" : "🗺️"}
+        <button
+            className={`map-btn ${tracking ? "active" : ""}`}
+            title={tracking ? "Tắt theo dõi vị trí" : "Theo dõi vị trí"}
+            onClick={toggleTracking}
+          >
+          <MyLocationIcon size={20} />
         </button>
 
         {/* ✅ Badge nằm ngay dưới nút đổi map */}
