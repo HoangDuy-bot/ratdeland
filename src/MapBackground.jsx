@@ -627,25 +627,40 @@ const locateMe = () => {
   };
 
   const onSuccess = (pos) => {
-    const { latitude, longitude, accuracy } = pos.coords;
+  const { latitude, longitude, accuracy } = pos.coords;
 
-    // chỉ nhận nếu accuracy đủ tốt
-    if (accuracy > 50) return;
+  console.log("✅ GEO OK:", {
+    latitude,
+    longitude,
+    accuracy,
+    timestamp: pos.timestamp,
+  });
 
-    const latlng = L.latLng(latitude, longitude);
+  const latlng = L.latLng(latitude, longitude);
 
-    if (markerRef.current) {
-      markerRef.current.setLatLng(latlng);
-    } else {
-      markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-    }
+  if (markerRef.current) {
+    markerRef.current.setLatLng(latlng);
+  } else {
+    markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+  }
 
-    map.flyTo(latlng, 19);
-  };
+  map.flyTo(latlng, 19, { animate: true });
+};
 
-  const onError = () => {
-    stopLocating();
-  };
+  const onError = (err) => {
+  console.log("❌ GEO ERROR:", err);
+
+  // err.code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+  const code = err?.code;
+  const msg =
+    code === 1 ? "PERMISSION_DENIED (bị chặn quyền vị trí)" :
+    code === 2 ? "POSITION_UNAVAILABLE (không lấy được tín hiệu GPS)" :
+    code === 3 ? "TIMEOUT (quá thời gian chờ GPS)" :
+    (err?.message || "Unknown error");
+
+  alert(`Không lấy được vị trí: ${msg}`);
+  stopLocating();
+};
 
   // 🔥 ép lấy fix mới trước
   navigator.geolocation.getCurrentPosition(onSuccess, onError, options);
