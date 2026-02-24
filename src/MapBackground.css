@@ -99,29 +99,41 @@
 
 /* ===== MOBILE ===== */
 @media (max-width: 640px) {
+  /* Panel nhỏ lại + kéo lên */
   .map-panel {
     left: 12px;
-    right: 12px;
+    right: auto;
+    width: min(92vw, 360px);   /* ✅ chỉ ~1/2 đến 2/3 màn */
     top: auto;
-    bottom: 12px;
-    width: auto;
-
-    border-radius: 18px;
+    bottom: 110px;             /* ✅ kéo lên cao hơn */
     padding: 10px 12px;
-
-    /* ✅ chắc chắn nằm trên map */
+    border-radius: 18px;
     z-index: 18000;
+
+    max-height: 42vh;          /* ✅ không chiếm quá lớn */
+    overflow: auto;            /* ✅ nếu nhiều nội dung vẫn cuộn */
   }
 
-  /* toolbar né panel */
+  /* ✅ Nút vệ tinh + vị trí -> sát panel góc trái trên */
   .map-toolbar {
+    position: absolute;        /* ✅ thêm để chắc chắn ăn */
     top: 12px;
-    right: 12px;
+    left: 12px;
+    right: auto;
+    flex-direction: row;       /* ✅ nằm ngang cho gọn */
+    gap: 10px;
+    z-index: 19000;
   }
 
   /* badge né panel */
   .map-badge {
-    bottom: 110px;
+    bottom: 70px;
+    right: 12px;
+  }
+
+  /* ✅ kéo geoman (tool vẽ/xoá) lên góc phải trên */
+  .leaflet-top.leaflet-right {
+    top: 12px;
     right: 12px;
   }
 }

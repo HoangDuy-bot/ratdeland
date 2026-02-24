@@ -338,8 +338,10 @@ import("@geoman-io/leaflet-geoman-free").then(() => {
     return;
   }
 
+  const isMobile = window.matchMedia("(max-width: 640px)").matches;
+
   map.pm.addControls({
-    position: "bottomright",
+    position: isMobile ? "topright" : "bottomright",
     drawMarker: false,
     drawCircleMarker: false,
     drawCircle: false,
