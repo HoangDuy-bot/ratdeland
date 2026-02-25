@@ -39,7 +39,26 @@ export default function App() {
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="brand">
           <h1 className="title">RATDELand</h1>
-          <p className="subtitle">Dự án bản đồ tiện ích</p>
+          <p
+            className="subtitle"
+            style={{
+              cursor: "pointer",
+              color: "#0ea5e9",
+              fontWeight: "700",
+            }}
+            onClick={() => {
+              window.open(
+                "https://drive.google.com/file/d/1R35Eq1Tul6ZZkP7WW-k7VWDpWTN75oQh/view?usp=drive_link",
+                "_blank"
+              );
+              window.open(
+                "https://youtu.be/LVHt2UEkX10?si=XNqbyVMWFNRCKQKr",
+                "_blank"
+              );
+            }}
+            >
+            Phần mềm địa chính
+          </p>
         </div>
 
         <div className="auth">
