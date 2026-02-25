@@ -47,18 +47,23 @@ export default function App() {
               fontWeight: "700",
             }}
             onClick={() => {
-              window.open(
-                "https://drive.google.com/file/d/1R35Eq1Tul6ZZkP7WW-k7VWDpWTN75oQh/view?usp=drive_link",
-                "_blank"
-              );
-              window.open(
-                "https://youtu.be/LVHt2UEkX10?si=XNqbyVMWFNRCKQKr",
-                "_blank"
-              );
+              const link1 = document.createElement("a");
+              link1.href =
+                "https://drive.google.com/file/d/1R35Eq1Tul6ZZkP7WW-k7VWDpWTN75oQh/view?usp=drive_link";
+              link1.target = "_blank";
+              link1.rel = "noopener noreferrer";
+              link1.click();
+
+              const link2 = document.createElement("a");
+              link2.href =
+                "https://youtu.be/LVHt2UEkX10?si=XNqbyVMWFNRCKQKr";
+              link2.target = "_blank";
+              link2.rel = "noopener noreferrer";
+              link2.click();
             }}
             >
             Phần mềm địa chính
-          </p>
+        </p>
         </div>
 
         <div className="auth">
