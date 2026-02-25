@@ -10,6 +10,13 @@ export default function App() {
 
   // ✅ thêm state mở/đóng sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // ✅ Auto: width <= 768 OR height <= 768
+const [isAutoCompact, setIsAutoCompact] = useState(
+  window.innerWidth <= 768 || window.innerHeight <= 768
+);
+
+// ✅ Manual override: null = auto, true = ép về 3 gạch
+const [forceCompact, setForceCompact] = useState(null);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -25,18 +32,52 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  return (
-    <div className={`app ${sidebarOpen ? "sidebar-open" : ""} ${authOpen ? "modal-open" : ""}`}>
+  useEffect(() => {
+  const onResize = () => {
+    setIsAutoCompact(window.innerWidth <= 768 || window.innerHeight <= 768);
+  };
+
+  window.addEventListener("resize", onResize);
+  return () => window.removeEventListener("resize", onResize);
+}, []);
+
+  const compactMode = forceCompact === true ? true : isAutoCompact;
+
+return (
+   <div
+  className={`app ${compactMode ? "compact" : ""} ${sidebarOpen ? "sidebar-open" : ""} ${
+    authOpen ? "modal-open" : ""
+  }`}
+>
       {/* ✅ nút mở menu (chỉ hiện ở mobile nhờ CSS) */}
+     {compactMode && (
       <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
         ☰
       </button>
+      )}
 
       {/* ✅ backdrop (mobile) */}
-      {sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
+      {compactMode && sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <button
+          className="panel-toggle"
+          onClick={() => {
+            // nếu đang compact -> về auto
+            if (compactMode) {
+              setForceCompact(null);
+              setSidebarOpen(false);
+            } else {
+              // nếu đang desktop -> ép về 3 gạch
+              setForceCompact(true);
+              setSidebarOpen(false);
+            }
+          }}
+          title={compactMode ? "Về mặc định" : "Thu gọn"}
+          >
+          {compactMode ? ">" : "<"}
+        </button>
         <div className="brand">
           <h1 className="title">RATDELand</h1>
           <p
@@ -87,7 +128,7 @@ export default function App() {
       </div>
 
       {/* Map */}
-      <div className="main" onClick={() => setSidebarOpen(false)}>
+      <div className="main" onClick={() => compactMode && setSidebarOpen(false)}>
         <MapBackground
             user={user}
             onRequireAuth={() => setAuthOpen(true)}
