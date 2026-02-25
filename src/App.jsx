@@ -62,7 +62,7 @@ export default function App() {
               link2.click();
             }}
             >
-            Phần mềm địa chính
+            Phần mềm địa chính RATDE
         </p>
         </div>
 
