@@ -126,19 +126,6 @@
 
 /* ===== Geoman actions: chỉ đổi layout, KHÔNG phá hide/show ===== */
 
-/* mặc định không đụng display để Geoman tự ẩn/hiện */
-.leaflet-pm-actions-container {
-  gap: 8px;
-}
-
-/* Chỉ khi container KHÔNG bị display:none (tức đang vẽ) thì ép dọc */
-.leaflet-pm-actions-container:not([style*="display: none"]) {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start;
-  gap: 8px !important;
-}
-
 /* Mỗi nút 1 dòng */
 .leaflet-pm-actions-container > a.leaflet-pm-action {
   display: inline-flex !important;
