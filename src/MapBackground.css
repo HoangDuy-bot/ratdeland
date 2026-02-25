@@ -124,23 +124,28 @@
   border: 1px solid #2563eb;
 }
 
-/* ✅ Geoman actions: luôn xếp dọc (Finish / Remove / Cancel) */
+/* ✅ Geoman actions: xếp dọc nhưng KHÔNG phá trạng thái ẩn/hiện mặc định */
 .leaflet-pm-actions-container,
-.leaflet-pm-actions-container ul {
-  display: flex !important;
-  flex-direction: column !important;
+.leaflet-pm-actions-container ul { 
   gap: 8px !important;
 }
 
-/* mỗi nút 1 dòng, không bị “dàn ngang” */
-.leaflet-pm-actions-container .leaflet-pm-action,
-.leaflet-pm-actions-container li {
+/* ul xếp dọc */
+.leaflet-pm-actions-container ul {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
   margin: 0 !important;
-  float: none !important;
-  display: block !important;
 }
 
-/* style nút gọn gàng */
+/* mỗi nút 1 dòng */
+.leaflet-pm-actions-container li {
+  list-style: none !important;
+  margin: 0 !important;
+  float: none !important;
+}
+
+/* style nút gọn */
 .leaflet-pm-actions-container a {
   display: inline-flex !important;
   align-items: center;
