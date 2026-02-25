@@ -124,26 +124,42 @@
   border: 1px solid #2563eb;
 }
 
-/* Ép thanh action của Leaflet.Draw (Finish / Cancel / Remove...) thành dọc */
+/* ===== Leaflet.Draw actions: ép dọc chắc chắn ===== */
 .leaflet-draw-actions {
+  white-space: normal !important;
+}
+
+/* Leaflet.Draw thường render actions theo ul/li */
+.leaflet-draw-actions ul {
   display: flex !important;
   flex-direction: column !important;
-  gap: 6px;
+  gap: 6px !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* Mỗi nút chiếm full width và gọn lại */
-.leaflet-draw-actions a {
+.leaflet-draw-actions li {
+  float: none !important;
   display: block !important;
-  width: 150px;          /* bạn có thể giảm còn 120px */
-  padding: 6px 10px !important;
-  white-space: nowrap;   /* không xuống dòng */
+  margin: 0 !important;
 }
 
-/* Trên mobile thì làm nhỏ hơn */
+.leaflet-draw-actions li a {
+  display: block !important;
+  width: 150px !important;      /* chỉnh 120 nếu muốn nhỏ */
+  padding: 6px 10px !important;
+  white-space: nowrap !important;
+}
+
+/* Ẩn tooltip hướng dẫn khi vẽ (Click to continue drawing, ...) */
+.leaflet-draw-tooltip {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
-  .leaflet-draw-actions a {
-    width: 120px;
-    font-size: 12px;
+  .leaflet-draw-actions li a {
+    width: 120px !important;
+    font-size: 12px !important;
     padding: 6px 8px !important;
   }
 }
