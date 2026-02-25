@@ -124,19 +124,3 @@
   border: 1px solid #2563eb;
 }
 
-/* ===== Geoman actions: chỉ đổi layout, KHÔNG phá hide/show ===== */
-
-.leaflet-pm-actions-container {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start; /* hoặc stretch nếu muốn full width */
-  gap: 6px; /* khoảng cách giữa các nút */
-}
-.leaflet-pm-actions-container > a.leaflet-pm-action {
-  display: flex !important;
-  width: 100%;
-  margin: 0 !important;
-  float: none !important;
-  padding: 8px 10px;
-  border-radius: 10px;
-}
