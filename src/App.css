@@ -106,24 +106,27 @@
     height: 100%;
   }
 
-  .menu-btn {
-    display: grid;
-    position: fixed;
-    top: 14px;
-    left: 14px;
-    z-index: 21000;
+ .menu-btn {
+  display: grid;
+  place-items: center;
 
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    border: none;
-    background: rgba(255,255,255,0.95);
-     color: #080441;
-  font-size: 24px;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 21000;
+
+  width: 44px;
+  height: 44px;
+
+  border: none;
+  background: transparent;     /* bỏ nền trắng */
+  color: #0ea5e9;               /* xanh thương hiệu */
+  font-size: 28px;              /* to hơn chút */
   font-weight: 900;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
-    cursor: pointer;
-  }
+
+  box-shadow: none;             /* bỏ đổ bóng */
+  cursor: pointer;
+}
 }
 
 /* ✅ Khi ép về 3 gạch (compact) thì luôn dùng drawer, kể cả desktop */
@@ -200,11 +203,10 @@
   left: 10px;
 }
 .app.compact .menu-btn {
-  border: 1px solid rgba(0,0,0,0.25);
-  background: rgba(15, 23, 42, 0.92);
-  color: #15055d;
-  font-weight: 900;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  background: transparent;
+  border: none;
+  color: #0ea5e9;
+  box-shadow: none;
 }
 /* ✅ Khi mở modal login -> ẩn UI của map để khỏi đè lên form */
 .app.modal-open .leaflet-control-container,
