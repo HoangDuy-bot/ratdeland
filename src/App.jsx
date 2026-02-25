@@ -12,23 +12,23 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // ✅ Auto: width <= 768 OR height <= 768
 const [isAutoCompact, setIsAutoCompact] = useState(
-  window.innerWidth <= 768 || window.innerHeight <= 768
+  window.innerWidth <= 768 || window.innerHeight <= 500
 );
 
 const handleToggleCompact = () => {
   if (compactMode) {
-    // đang 3 gạch -> về mặc định (auto)
-    setForceCompact(null);
+    // đang 3 gạch -> ép mở rộng desktop
+    setForceMode("desktop");
     setSidebarOpen(false);
   } else {
-    // đang desktop -> thu nhỏ về 3 gạch
-    setForceCompact(true);
+    // đang desktop -> ép thu nhỏ 3 gạch
+    setForceMode("compact");
     setSidebarOpen(false);
   }
 };
 
-// ✅ Manual override: null = auto, true = ép về 3 gạch
-const [forceCompact, setForceCompact] = useState(null);
+// null = AUTO, "compact" = ép 3 gạch, "desktop" = ép mở rộng
+const [forceMode, setForceMode] = useState(null);
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -46,14 +46,17 @@ const [forceCompact, setForceCompact] = useState(null);
 
   useEffect(() => {
   const onResize = () => {
-    setIsAutoCompact(window.innerWidth <= 768 || window.innerHeight <= 768);
+    setIsAutoCompact(window.innerWidth <= 768 || window.innerHeight <= 500);
   };
 
   window.addEventListener("resize", onResize);
   return () => window.removeEventListener("resize", onResize);
 }, []);
 
-  const compactMode = forceCompact === true ? true : isAutoCompact;
+  const compactMode =
+  forceMode === "compact" ? true :
+  forceMode === "desktop" ? false :
+  isAutoCompact;
 
 return (
    <div
