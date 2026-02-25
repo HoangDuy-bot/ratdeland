@@ -124,13 +124,6 @@
   }
 }
 
-
- /* Nút < / > ở giữa mép phải sidebar */
-/* Nút < / > bám theo sidebar (trên desktop) */
-.app:not(.compact) .sidebar {
-  position: relative;
-}
-
 .panel-toggle {
   position: absolute;
   top: 50%;
@@ -182,12 +175,56 @@
   display: none;
 }
 
+/* Nút < / > (đặt fixed để bấm được cả khi drawer đóng) */
+.panel-toggle {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 22000;
+
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 900;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+.panel-toggle-text {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+/* Desktop: nút nằm đúng mép phải của sidebar 340px */
+.panel-toggle.is-desktop {
+  left: calc(340px - 14px);
+}
+
+/* Compact + drawer đang mở: nút nằm mép phải drawer (max 320px) */
+.panel-toggle.is-compact:not(.is-closed) {
+  left: calc(min(80vw, 320px) - 14px);
+}
+
+/* Compact + drawer đang đóng: để nút sát mép trái màn hình (vẫn bấm được) */
+.panel-toggle.is-compact.is-closed {
+  left: 10px;
+}
+
 /* ✅ Khi mở modal login -> ẩn UI của map để khỏi đè lên form */
 .app.modal-open .leaflet-control-container,
 .app.modal-open .map-toolbar,
 .app.modal-open .map-panel {
   display: none !important;
 }
+
 
 /* ✅ Khi mở modal login -> khóa thao tác map */
 .app.modal-open .main {

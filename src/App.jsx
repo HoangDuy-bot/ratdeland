@@ -15,6 +15,18 @@ const [isAutoCompact, setIsAutoCompact] = useState(
   window.innerWidth <= 768 || window.innerHeight <= 768
 );
 
+const handleToggleCompact = () => {
+  if (compactMode) {
+    // đang 3 gạch -> về mặc định (auto)
+    setForceCompact(null);
+    setSidebarOpen(false);
+  } else {
+    // đang desktop -> thu nhỏ về 3 gạch
+    setForceCompact(true);
+    setSidebarOpen(false);
+  }
+};
+
 // ✅ Manual override: null = auto, true = ép về 3 gạch
 const [forceCompact, setForceCompact] = useState(null);
 
@@ -59,25 +71,20 @@ return (
       {/* ✅ backdrop (mobile) */}
       {compactMode && sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
 
+      <button
+        className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
+          compactMode && !sidebarOpen ? "is-closed" : ""
+        }`}
+        onClick={handleToggleCompact}
+        title={compactMode ? "Về mặc định" : "Thu nhỏ"}
+       >
+        {compactMode ? ">" : "<"}
+        {!compactMode && <span className="panel-toggle-text">Thu nhỏ</span>}
+      </button>
+
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <button
-          className="panel-toggle"
-          onClick={() => {
-            // nếu đang compact -> về auto
-            if (compactMode) {
-              setForceCompact(null);
-              setSidebarOpen(false);
-            } else {
-              // nếu đang desktop -> ép về 3 gạch
-              setForceCompact(true);
-              setSidebarOpen(false);
-            }
-          }}
-          title={compactMode ? "Về mặc định" : "Thu gọn"}
-          >
-          {compactMode ? ">" : "<"}
-        </button>
+       
         <div className="brand">
           <h1 className="title">RATDELand</h1>
           <p
