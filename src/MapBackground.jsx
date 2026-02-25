@@ -461,6 +461,8 @@ import("@geoman-io/leaflet-geoman-free").then(() => {
   map.pm.setGlobalOptions({
     measurements: false,
     showMeasurements: false,
+    // ✅ tắt tooltip hướng dẫn khi vẽ
+  tooltips: false,
     
   });
 
