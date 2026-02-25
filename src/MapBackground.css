@@ -126,10 +126,15 @@
 
 /* ===== Geoman actions: chỉ đổi layout, KHÔNG phá hide/show ===== */
 
-/* Mỗi nút 1 dòng */
+.leaflet-pm-actions-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start; /* hoặc stretch nếu muốn full width */
+  gap: 6px; /* khoảng cách giữa các nút */
+}
 .leaflet-pm-actions-container > a.leaflet-pm-action {
-  display: inline-flex !important;
-  width: max-content;
+  display: flex !important;
+  width: 100%;
   margin: 0 !important;
   float: none !important;
   padding: 8px 10px;
