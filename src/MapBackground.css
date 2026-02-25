@@ -123,3 +123,27 @@
   color: white;
   border: 1px solid #2563eb;
 }
+
+/* Ép thanh action của Leaflet.Draw (Finish / Cancel / Remove...) thành dọc */
+.leaflet-draw-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px;
+}
+
+/* Mỗi nút chiếm full width và gọn lại */
+.leaflet-draw-actions a {
+  display: block !important;
+  width: 150px;          /* bạn có thể giảm còn 120px */
+  padding: 6px 10px !important;
+  white-space: nowrap;   /* không xuống dòng */
+}
+
+/* Trên mobile thì làm nhỏ hơn */
+@media (max-width: 768px) {
+  .leaflet-draw-actions a {
+    width: 120px;
+    font-size: 12px;
+    padding: 6px 8px !important;
+  }
+}
