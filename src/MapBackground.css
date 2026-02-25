@@ -131,22 +131,7 @@
   gap: 8px;
 }
 
-/* Khi Geoman hiện actions: nó sẽ gắn class/inline style => container có kích thước
-   Ta ép flex nhưng KHÔNG làm nó hiện sẵn */
-.leaflet-pm-actions-container:not([style*="display: none"]) {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start;
-  gap: 8px !important;
-}
 
-/* Nếu Geoman dùng class "active" (tuỳ version) thì thêm luôn */
-.leaflet-pm-actions-container.active {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start;
-  gap: 8px !important;
-}
 
 /* Mỗi nút 1 dòng */
 .leaflet-pm-actions-container a {
