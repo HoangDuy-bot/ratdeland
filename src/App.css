@@ -182,11 +182,6 @@
   box-shadow: 0 6px 18px rgba(0,0,0,0.2);
 }
 
-.panel-toggle-text {
-  font-size: 12px;
-  font-weight: 700;
-  opacity: 0.9;
-}
 
 /* Desktop: nút nằm đúng mép phải của sidebar 340px */
 .panel-toggle.is-desktop {

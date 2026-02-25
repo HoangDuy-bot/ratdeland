@@ -74,15 +74,14 @@ return (
       {/* ✅ backdrop (mobile) */}
       {compactMode && sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
 
-      <button
+     <button
         className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
           compactMode && !sidebarOpen ? "is-closed" : ""
         }`}
         onClick={handleToggleCompact}
-        title={compactMode ? "Về mặc định" : "Thu nhỏ"}
-       >
+        title={compactMode ? "Mở rộng" : "Thu nhỏ"}
+        >
         {compactMode ? ">" : "<"}
-        {!compactMode && <span className="panel-toggle-text">Thu nhỏ</span>}
       </button>
 
       {/* Sidebar */}
