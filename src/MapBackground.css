@@ -124,33 +124,35 @@
   border: 1px solid #2563eb;
 }
 
-/* ✅ Geoman actions: xếp dọc nhưng KHÔNG phá trạng thái ẩn/hiện mặc định */
-.leaflet-pm-actions-container,
-.leaflet-pm-actions-container ul { 
+/* ===== Geoman: action buttons dọc, không hiện sẵn ===== */
+
+/* Mặc định: đừng đụng display để Geoman tự hide/show */
+.leaflet-pm-actions-container {
+  gap: 8px;
+}
+
+/* Khi Geoman hiện actions: nó sẽ gắn class/inline style => container có kích thước
+   Ta ép flex nhưng KHÔNG làm nó hiện sẵn */
+.leaflet-pm-actions-container:not([style*="display: none"]) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start;
   gap: 8px !important;
 }
 
-/* ul xếp dọc */
-.leaflet-pm-actions-container ul {
+/* Nếu Geoman dùng class "active" (tuỳ version) thì thêm luôn */
+.leaflet-pm-actions-container.active {
   display: flex !important;
   flex-direction: column !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  align-items: flex-start;
+  gap: 8px !important;
 }
 
-/* mỗi nút 1 dòng */
-.leaflet-pm-actions-container li {
-  list-style: none !important;
-  margin: 0 !important;
-  float: none !important;
-}
-
-/* style nút gọn */
+/* Mỗi nút 1 dòng */
 .leaflet-pm-actions-container a {
   display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
   width: max-content;
+  margin: 0 !important;
   padding: 8px 10px;
   border-radius: 10px;
 }
