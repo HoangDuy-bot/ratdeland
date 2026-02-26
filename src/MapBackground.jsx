@@ -849,9 +849,9 @@ const forcePmPosition = () => {
 
   if (isForcedCompact) {
     // ✅ forced compact (màn thấp/nhỏ): đẩy xuống để không đè panel/toolbar
-    tb.style.top = "10px";     // chỉnh 160~220px tùy bạn thấy hợp
+    tb.style.top = "1px";     // chỉnh 160~220px tùy bạn thấy hợp
     tb.style.bottom = "auto";
-    tb.style.transform = "none";
+    tb.style.transform = "translateY(-3%)";
     tb.style.marginTop = "0";
   } else {
     // ✅ bình thường (desktop/không forced): giữ như hiện tại
