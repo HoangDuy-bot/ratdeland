@@ -58,6 +58,8 @@ const [forceMode, setForceMode] = useState(null);
   forceMode === "desktop" ? false :
   isAutoCompact;
 
+  const isForcedCompact = forceMode === null && isAutoCompact;
+
 return (
    <div
   className={`app ${compactMode ? "compact" : ""} ${sidebarOpen ? "sidebar-open" : ""} ${
@@ -74,15 +76,17 @@ return (
       {/* ✅ backdrop (mobile) */}
       {compactMode && sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
 
-     <button
-        className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
-          compactMode && !sidebarOpen ? "is-closed" : ""
-        }`}
-        onClick={handleToggleCompact}
-        title={compactMode ? "Mở rộng" : "Thu nhỏ"}
-        >
-        {compactMode ? ">" : "<"}
-      </button>
+     {!isForcedCompact && (
+  <button
+    className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
+      compactMode && !sidebarOpen ? "is-closed" : ""
+    }`}
+    onClick={handleToggleCompact}
+    title={compactMode ? "Mở rộng" : "Thu nhỏ"}
+  >
+    {compactMode ? ">" : "<"}
+  </button>
+)}
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
@@ -139,10 +143,11 @@ return (
       {/* Map */}
       <div className="main" onClick={() => compactMode && setSidebarOpen(false)}>
         <MapBackground
-            user={user}
-            onRequireAuth={() => setAuthOpen(true)}
-            uiLocked={sidebarOpen || authOpen}
-          />
+  user={user}
+  onRequireAuth={() => setAuthOpen(true)}
+  uiLocked={sidebarOpen || authOpen}
+  isForcedCompact={isForcedCompact}
+/>
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />

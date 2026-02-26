@@ -574,7 +574,7 @@ function updateMeasureLabel(map, layer) {
   }
 }
 
-export default function MapBackground({ user, onRequireAuth, uiLocked }) {
+export default function MapBackground({ user, onRequireAuth, uiLocked, isForcedCompact }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   
@@ -847,11 +847,21 @@ const forcePmPosition = () => {
   const tb = document.querySelector(".leaflet-pm-toolbar");
   if (!tb) return;
 
-  tb.style.top = "5%";
-  tb.style.bottom = "auto";
-  tb.style.transform = "translateY(-10%)";
-  tb.style.marginTop = "0";
+  if (isForcedCompact) {
+    // ✅ forced compact (màn thấp/nhỏ): đẩy xuống để không đè panel/toolbar
+    tb.style.top = "190px";     // chỉnh 160~220px tùy bạn thấy hợp
+    tb.style.bottom = "auto";
+    tb.style.transform = "none";
+    tb.style.marginTop = "0";
+  } else {
+    // ✅ bình thường (desktop/không forced): giữ như hiện tại
+    tb.style.top = "5%";
+    tb.style.bottom = "auto";
+    tb.style.transform = "translateY(-10%)";
+    tb.style.marginTop = "0";
+  }
 };
+
 // Đợi Geoman render xong
 setTimeout(forcePmPosition, 100);
 window.addEventListener("resize", forcePmPosition);
