@@ -1,3 +1,5 @@
+import * as XLSX from "xlsx";
+
 import { supabase } from "./supabaseClient";
 
 import "./MapBackground.css";
@@ -88,6 +90,177 @@ const CATALOG = [
     defaultView: { lat: 10.3, lng: 105.28, zoom: 12 },
   },
 ];
+
+// ===== Provinces (VN2000 TM-3 central meridian L0) - giống VS =====
+const PROVINCES_L0 = {
+  "Lai Châu": 103,
+  "Điện Biên": 103,
+  "Sơn La": 104,
+  "Kiên Giang": 104.5,
+  "Cà Mau": 104.5,
+  "Lào Cai": 104.75,
+  "Yên Bái": 104.75,
+  "Nghệ An": 104.75,
+  "Phú Thọ": 104.75,
+  "An Giang": 104.75,
+  "Thanh Hóa": 105,
+  "Vĩnh Phúc": 105,
+  "Hà Tây": 105,
+  "Đồng Tháp": 105,
+  "Cần Thơ": 105,
+  "Hậu Giang": 105,
+  "Bạc Liêu": 105,
+  "Hà Nội": 105,
+  "Ninh Bình": 105,
+  "Hà Nam": 105,
+  "Hà Giang": 105.5,
+  "Hải Dương": 105.5,
+  "Hà Tĩnh": 105.5,
+  "Bắc Ninh": 105.5,
+  "Hưng Yên": 105.5,
+  "Thái Bình": 105.5,
+  "Nam Định": 105.5,
+  "Tây Ninh": 105.5,
+  "Vĩnh Long": 105.5,
+  "Sóc Trăng": 105.5,
+  "Trà Vinh": 105.5,
+  "Cao Bằng": 105.75,
+  "Long An": 105.75,
+  "Tiền Giang": 105.75,
+  "Bến Tre": 105.75,
+  "Hải Phòng": 105.75,
+  "Hồ Chí Minh": 105.75,
+  "Bình Dương": 105.75,
+  "Tuyên Quang": 106,
+  "Hòa Bình": 106,
+  "Quảng Bình": 106,
+  "Quảng Trị": 106.25,
+  "Bình Phước": 106.25,
+  "Bắc Kạn": 106.5,
+  "Thái Nguyên": 106.5,
+  "Bắc Giang": 107,
+  "Thừa Thiên Huế": 107,
+  "Lạng Sơn": 107.25,
+  "Kon Tum": 107.5,
+  "Quảng Ninh": 107.75,
+  "Đồng Nai": 107.75,
+  "Bà Rịa Vũng Tàu": 107.75,
+  "Quảng Nam": 107.75,
+  "Lâm Đồng": 107.75,
+  "Đà Nẵng": 107.75,
+  "Quảng Ngãi": 108,
+  "Ninh Thuận": 108.25,
+  "Khánh Hòa": 108.25,
+  "Bình Định": 108.25,
+  "Đắc Lắc": 108.5,
+  "Đắc Nông": 108.5,
+  "Phú Yên": 108.5,
+  "Gia Lai": 108.5,
+  "Bình Thuận": 108.5,
+};
+
+function wgs84ToVn2000TM3(latitude, longitude, L0_deg) {
+  const a = 6378137.0;
+  const invF = 298.25722356;
+  const f = 1.0 / invF;
+  const e2 = 2 * f - f * f;
+  const ep2 = e2 / (1 - e2);
+
+  const lat = (latitude * Math.PI) / 180.0;
+  const lon = (longitude * Math.PI) / 180.0;
+
+  const sinLat = Math.sin(lat);
+  const cosLat = Math.cos(lat);
+  const sinLon = Math.sin(lon);
+  const cosLon = Math.cos(lon);
+
+  const Nw = a / Math.sqrt(1 - e2 * sinLat * sinLat);
+
+  const Xw = Nw * cosLat * cosLon;
+  const Yw = Nw * cosLat * sinLon;
+  const Zw = Nw * (1 - e2) * sinLat;
+
+  const Tx = -191.90441429;
+  const Ty = -39.30318279;
+  const Tz = -111.45032835;
+
+  const Rx_sec = -0.00928836;
+  const Ry_sec = 0.01975479;
+  const Rz_sec = -0.00427372;
+
+  const rx = (Rx_sec * Math.PI) / (180.0 * 3600.0);
+  const ry = (Ry_sec * Math.PI) / (180.0 * 3600.0);
+  const rz = (Rz_sec * Math.PI) / (180.0 * 3600.0);
+
+  const ds = 0.252906278e-6;
+  const k = 1.0 + ds;
+
+  const dX = Xw - Tx;
+  const dY = Yw - Ty;
+  const dZ = Zw - Tz;
+
+  const Xv = (1.0 / k) * (dX + rz * dY - ry * dZ);
+  const Yv = (1.0 / k) * (-rz * dX + dY + rx * dZ);
+  const Zv = (1.0 / k) * (ry * dX - rx * dY + dZ);
+
+  const lonVn = Math.atan2(Yv, Xv);
+  const p = Math.sqrt(Xv * Xv + Yv * Yv);
+
+  let latVn = Math.atan2(Zv, p * (1 - e2));
+  for (let i = 0; i < 10; i++) {
+    const s = Math.sin(latVn);
+    const Niter = a / Math.sqrt(1 - e2 * s * s);
+    latVn = Math.atan2(Zv + e2 * Niter * s, p);
+  }
+
+  const L0 = (L0_deg * Math.PI) / 180.0;
+  const k0 = 0.9999;
+  const FE = 500000.0;
+  const FN = 0.0;
+
+  const sinB = Math.sin(latVn);
+  const cosB = Math.cos(latVn);
+  const tanB = Math.tan(latVn);
+
+  const Nphi = a / Math.sqrt(1 - e2 * sinB * sinB);
+  const T = tanB * tanB;
+  const C = ep2 * cosB * cosB;
+  const A = (lonVn - L0) * cosB;
+
+  const e4 = e2 * e2;
+  const e6 = e4 * e2;
+
+  const M =
+    a *
+    ((1 - e2 / 4 - (3 * e4) / 64 - (5 * e6) / 256) * latVn -
+      ((3 * e2) / 8 + (3 * e4) / 32 + (45 * e6) / 1024) * Math.sin(2 * latVn) +
+      ((15 * e4) / 256 + (45 * e6) / 1024) * Math.sin(4 * latVn) -
+      (35 * e6) / 3072 * Math.sin(6 * latVn));
+
+  const X =
+    FN +
+    k0 *
+      (M +
+        Nphi *
+          tanB *
+          (A * A / 2 +
+            ((5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4)) / 24 +
+            ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * Math.pow(A, 6)) / 720));
+
+  const Y =
+    FE +
+    k0 *
+      (Nphi *
+        (A +
+          ((1 - T + C) * Math.pow(A, 3)) / 6 +
+          ((5 - 18 * T + T * T + 72 * C - 58 * ep2) * Math.pow(A, 5)) / 120));
+
+  return { X, Y }; // X=Northing, Y=Easting
+}
+
+const PROVINCE_NAMES = Object.keys(PROVINCES_L0).sort((a, b) =>
+  a.localeCompare(b, "vi")
+);
 
 function MyLocationIcon({ size = 20 }) {
   return (
@@ -283,12 +456,89 @@ export default function MapBackground({ user, onRequireAuth, uiLocked }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 const [isLocating, setIsLocating] = useState(false);
+
+const [provinceForConvert, setProvinceForConvert] = useState(PROVINCE_NAMES[0] || "An Giang");
+
   const baseLayerRef = useRef(null);
   const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
-  const markerRef = useRef(null);
+
+const drawnLayersRef = useRef([]); // ✅ lưu tất cả line/polyline/polygon đã vẽ
+
+const exportPointsToExcel = () => {
+  const L0 = PROVINCES_L0[provinceForConvert];
+  if (!L0) {
+    alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
+    return;
+  }
+
+  const layers = drawnLayersRef.current || [];
+  if (!layers.length) {
+    alert("Chưa có đối tượng nào được vẽ để xuất.");
+    return;
+  }
+
+  const flatten = (latlngs) => {
+    if (!Array.isArray(latlngs)) return [];
+    if (!Array.isArray(latlngs[0])) return latlngs;        // polyline
+    if (!Array.isArray(latlngs[0][0])) return latlngs[0];  // polygon ring
+    return latlngs[0][0];
+  };
+
+  const rows = [];
+  let stt = 1;
+
+  for (const layer of layers) {
+    if (!layer?.getLatLngs) continue;
+
+    let pts = flatten(layer.getLatLngs());
+
+    // bỏ điểm cuối nếu polygon đóng vòng
+    if (pts.length >= 2) {
+      const a = pts[0];
+      const b = pts[pts.length - 1];
+      if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
+    }
+
+    for (const p of pts) {
+      const lat = p.lat;
+      const lon = p.lng;
+
+      const vn = wgs84ToVn2000TM3(lat, lon, L0);
+
+      rows.push([
+        stt++,
+        Number(lat.toFixed(12)),
+        Number(lon.toFixed(12)),
+        Number(vn.X.toFixed(6)),
+        Number(vn.Y.toFixed(6)),
+      ]);
+    }
+  }
+
+  const header = ["STT", "Lat", "Long", "X", "Y"];
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Points");
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const now = new Date();
+  const fileName =
+    `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
+    `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
+    `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}.xlsx`;
+
+  XLSX.writeFile(wb, fileName);
+
+  alert(
+    `✅ Đã xuất Excel: ${fileName}\n` +
+    `📌 File được tải về Downloads của trình duyệt (hoặc nơi bạn chọn lưu).`
+  );
+};
+
+const markerRef = useRef(null);
 const warnedAccRef = useRef(false);
 const didCenterRef = useRef(false); // ✅ chỉ center 1 lần mỗi lần bật vị trí
-  const isLocatingRef = useRef(false);
+const isLocatingRef = useRef(false);
 const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
 
@@ -485,20 +735,23 @@ import("@geoman-io/leaflet-geoman-free").then(() => {
   });
 
   // ✅ sau khi tạo xong / edit / drag
-  map.on("pm:create", (e) => {
-    const layer = e.layer;
-    updateMeasureLabel(map, layer);
+ map.on("pm:create", (e) => {
+  const layer = e.layer;
 
-    layer.on("pm:edit", () => updateMeasureLabel(map, layer));
-    layer.on("pm:update", () => updateMeasureLabel(map, layer));
-    layer.on("pm:dragend", () => updateMeasureLabel(map, layer));
-  });
+  drawnLayersRef.current.push(layer); // ✅ lưu để export tất cả
+
+  updateMeasureLabel(map, layer);
+
+  layer.on("pm:edit", () => updateMeasureLabel(map, layer));
+  layer.on("pm:update", () => updateMeasureLabel(map, layer));
+  layer.on("pm:dragend", () => updateMeasureLabel(map, layer));
+});
 
   // ✅ Khi xóa bằng removalMode -> dọn tooltip + segment labels
 map.on("pm:remove", (e) => {
   const layer = e.layer;
   if (!layer) return;
-
+  drawnLayersRef.current = drawnLayersRef.current.filter((l) => l !== layer);
   // xóa label cạnh
   clearSegLabels(layer);
 
@@ -846,6 +1099,28 @@ if (!didCenterRef.current) {
           />
           <div className="pct">{Math.round(opacity * 100)}%</div>
         </div>
+
+        <div className="row">
+          <label className="label">Xuất điểm đã vẽ trên Map</label>
+          <select
+            className="select"
+            value={provinceForConvert}
+            onChange={(e) => setProvinceForConvert(e.target.value)}
+          >
+            {PROVINCE_NAMES.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          </div>
+
+         <div className="row">
+          <button className="export-btn" onClick={exportPointsToExcel}>
+            Xuất điểm (Excel)
+          </button>
+        </div>
+
       </div>
 
     </div>
