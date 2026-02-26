@@ -140,3 +140,42 @@
 .export-btn:active {
   transform: translateY(1px);
 }
+
+.coord-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9999;
+
+  display: block;
+}
+
+.coord-box {
+  position: absolute;
+
+  top: 10%;       /* cách lề trên 10% */
+  left: 60%;      /* desktop cách trái 60% */
+
+  transform: translateX(-50%); /* căn giữa theo trục 60% */
+
+  width: 280px;
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coord-box h4{
+  margin: 0 0 6px 0;   /* ✅ top = 0 => sát mép */
+  padding: 0;
+  line-height: 1.1;
+  font-size: 18px;
+}
+
+.map-badge-inline {
+  margin-top: 6px;
+  font-weight: 700;     /* in đậm */
+  font-size: 13px;
+  color: #0c0c0c;
+}

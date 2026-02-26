@@ -27,6 +27,14 @@ const redPinIcon = new L.Icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
+const yellowPinIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 // ✅ Danh mục tỉnh/khu vực (tile dạng Global Mapper: Z{z}/{y}/{x}.png)
 const CATALOG = [
   {
@@ -258,6 +266,120 @@ function wgs84ToVn2000TM3(latitude, longitude, L0_deg) {
   return { X, Y }; // X=Northing, Y=Easting
 }
 
+function vn2000TM3ToWgs84(E, N, L0_deg) {
+  // E = Easting (Y), N = Northing (X)
+  // L0_deg: kinh tuyến trục theo tỉnh (giống PROVINCES_L0)
+
+  const a = 6378137.0;
+  const invF = 298.25722356;
+  const f = 1.0 / invF;
+  const e2 = 2 * f - f * f;
+  const ep2 = e2 / (1 - e2);
+
+  const k0 = 0.9999;
+  const FE = 500000.0;
+  const FN = 0.0;
+
+  const L0 = (L0_deg * Math.PI) / 180.0;
+
+  // ===== 1) Inverse TM-3: (E,N) -> (phi, lam) trên datum VN2000 =====
+  const M = (N - FN) / k0;
+
+  const n = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+  const mu =
+    M /
+    (a * (1 - e2 / 4 - (3 * e2 * e2) / 64 - (5 * e2 * e2 * e2) / 256));
+
+  const phi1 =
+    mu +
+    (3 * n / 2 - (27 * Math.pow(n, 3)) / 32) * Math.sin(2 * mu) +
+    ((21 * Math.pow(n, 2)) / 16 - (55 * Math.pow(n, 4)) / 32) * Math.sin(4 * mu) +
+    ((151 * Math.pow(n, 3)) / 96) * Math.sin(6 * mu) +
+    ((1097 * Math.pow(n, 4)) / 512) * Math.sin(8 * mu);
+
+  const sin1 = Math.sin(phi1);
+  const cos1 = Math.cos(phi1);
+  const tan1 = Math.tan(phi1);
+
+  const N1 = a / Math.sqrt(1 - e2 * sin1 * sin1);
+  const R1 = (a * (1 - e2)) / Math.pow(1 - e2 * sin1 * sin1, 1.5);
+  const T1 = tan1 * tan1;
+  const C1 = ep2 * cos1 * cos1;
+
+  const D = (E - FE) / (k0 * N1);
+
+  const phi =
+    phi1 -
+    (N1 * tan1) /
+      R1 *
+      (D * D / 2 -
+        ((5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4)) / 24 +
+        ((61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) *
+          Math.pow(D, 6)) /
+          720);
+
+  const lam =
+    L0 +
+    (D -
+      ((1 + 2 * T1 + C1) * Math.pow(D, 3)) / 6 +
+      ((5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) *
+        Math.pow(D, 5)) /
+        120) /
+      cos1;
+
+  // ===== 2) (phi,lam) -> ECEF VN2000 =====
+  const H = 0.0;
+
+  const sinPhi = Math.sin(phi);
+  const cosPhi = Math.cos(phi);
+  const sinLam = Math.sin(lam);
+  const cosLam = Math.cos(lam);
+
+  const Nphi = a / Math.sqrt(1 - e2 * sinPhi * sinPhi);
+
+  const Xv = (Nphi + H) * cosPhi * cosLam;
+  const Yv = (Nphi + H) * cosPhi * sinLam;
+  const Zv = (Nphi * (1 - e2) + H) * sinPhi;
+
+  // ===== 3) Bursa-Wolf VN2000 -> WGS84 (forward) =====
+  const Tx = -191.90441429;
+  const Ty = -39.30318279;
+  const Tz = -111.45032835;
+
+  const Rx_sec = -0.00928836;
+  const Ry_sec = 0.01975479;
+  const Rz_sec = -0.00427372;
+
+  const rx = (Rx_sec * Math.PI) / (180.0 * 3600.0);
+  const ry = (Ry_sec * Math.PI) / (180.0 * 3600.0);
+  const rz = (Rz_sec * Math.PI) / (180.0 * 3600.0);
+
+  const ds = 0.252906278e-6;
+  const k = 1.0 + ds;
+
+  const Xw = Tx + k * (Xv - rz * Yv + ry * Zv);
+  const Yw = Ty + k * (rz * Xv + Yv - rx * Zv);
+  const Zw = Tz + k * (-ry * Xv + rx * Yv + Zv);
+
+  // ===== 4) ECEF WGS84 -> (lat,lon) =====
+  const lon = Math.atan2(Yw, Xw);
+  const p = Math.sqrt(Xw * Xw + Yw * Yw);
+
+  let lat = Math.atan2(Zw, p * (1 - e2));
+  for (let i = 0; i < 10; i++) {
+    const s = Math.sin(lat);
+    const Nw = a / Math.sqrt(1 - e2 * s * s);
+    lat = Math.atan2(Zw + e2 * Nw * s, p);
+  }
+
+  let latDeg = (lat * 180.0) / Math.PI;
+  let lonDeg = (lon * 180.0) / Math.PI;
+  if (lonDeg < -180) lonDeg += 360;
+  if (lonDeg > 180) lonDeg -= 360;
+
+  return { lat: latDeg, lng: lonDeg };
+}
+
 const PROVINCE_NAMES = Object.keys(PROVINCES_L0).sort((a, b) =>
   a.localeCompare(b, "vi")
 );
@@ -455,12 +577,25 @@ function updateMeasureLabel(map, layer) {
 export default function MapBackground({ user, onRequireAuth, uiLocked }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
+  
 const [isLocating, setIsLocating] = useState(false);
 
 const [provinceForConvert, setProvinceForConvert] = useState(PROVINCE_NAMES[0] || "An Giang");
 
-  const baseLayerRef = useRef(null);
-  const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
+// ===== THÊM ĐIỂM THEO TỌA ĐỘ =====
+const [showCoordModal, setShowCoordModal] = useState(false);
+const [provinceForAddPoint, setProvinceForAddPoint] = useState(PROVINCE_NAMES[0] || "An Giang");
+
+const [coordMode, setCoordMode] = useState("latlng"); // latlng | vn2000
+
+const [latInput, setLatInput] = useState("");
+const [lngInput, setLngInput] = useState("");
+
+const [xInput, setXInput] = useState("");
+const [yInput, setYInput] = useState("");
+
+const baseLayerRef = useRef(null);
+const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
 
 const drawnLayersRef = useRef([]); // ✅ lưu tất cả line/polyline/polygon đã vẽ
 
@@ -543,6 +678,7 @@ const onFoundRef = useRef(null);
 const onErrorRef = useRef(null);
 
 const targetMarkerRef = useRef(null); // ✅ pin đỏ đánh dấu
+const addedMarkersRef = useRef([]); // ✅ lưu tất cả điểm bạn thêm bằng nút 📍
 
 useEffect(() => {
   isLocatingRef.current = isLocating;
@@ -643,6 +779,7 @@ useEffect(() => {
     baseLayerRef.current = layers.sat;
 
     mapRef.current = map;
+    map.doubleClickZoom.disable(); // ✅ tắt zoom khi double click
 
     // ✅ Long-press để thả pin đỏ (mobile), click phải (desktop)
 let pressTimer = null;
@@ -693,7 +830,7 @@ import("@geoman-io/leaflet-geoman-free").then(() => {
   const isMobile = window.matchMedia("(max-width: 640px)").matches;
 
   map.pm.addControls({
-    position: isMobile ? "topright" : "bottomright",
+    position: "topright",
     drawMarker: false,
     drawCircleMarker: false,
     drawCircle: false,
@@ -705,21 +842,59 @@ import("@geoman-io/leaflet-geoman-free").then(() => {
     dragMode: true,
     cutPolygon: false,
     removalMode: true,
-  });
+  });  
+const forcePmPosition = () => {
+  const tb = document.querySelector(".leaflet-pm-toolbar");
+  if (!tb) return;
+
+  tb.style.top = "5%";
+  tb.style.bottom = "auto";
+  tb.style.transform = "translateY(-10%)";
+  tb.style.marginTop = "0";
+};
+// Đợi Geoman render xong
+setTimeout(forcePmPosition, 100);
+window.addEventListener("resize", forcePmPosition);
 
   // ✅ tắt đo mặc định của Geoman để không ra km/ha
-  map.pm.setGlobalOptions({
-    measurements: false,
-    showMeasurements: false,
-    // ✅ tắt tooltip hướng dẫn khi vẽ
+ map.pm.setGlobalOptions({
+  measurements: false,
+  showMeasurements: false,
   tooltips: false,
-    
+
+  // ✅ đường nối tới chuột (hint)
+  hintlineStyle: {
+    color: "#eb0c2d",
+    weight: 1.5,
+    opacity: 1,
+    dashArray: "3,6",
+  },
+});
+
+  // ✅ Style cho nét vẽ (mỏng lại)
+  map.pm.setPathOptions({
+    color: "#f30b0b",
+    weight: 1.5,        // <-- GIẢM ở đây: 1 / 1.5 / 2
+    opacity: 1,
+    fillColor: "#1e40af",
+    fillOpacity: 0.08 // polygon đỡ đậm
   });
 
   // ✅ live khi đang vẽ
   map.on("pm:drawstart", (e) => {
     const layer = e.workingLayer;
     if (!layer) return;
+
+    // ✅ làm mỏng ngay khi đang vẽ (working layer)
+if (layer.setStyle) {
+  layer.setStyle({
+    color: "#d3e910",
+    weight: 1.5,        // <-- mỏng khi đang vẽ
+    opacity: 1,
+    fillColor: "#1e40af",
+    fillOpacity: 0.08,
+  });
+}
 
     const refresh = () => updateMeasureLabel(map, layer);
 
@@ -1002,6 +1177,72 @@ if (!didCenterRef.current) {
             maximumAge: 0,
           });
       };
+
+ // ✅ lưu danh sách marker đã thêm (để sau này dọn/xóa nếu cần)
+
+const addPointToMap = (lat, lng) => {
+  const map = mapRef.current;
+  if (!map) return;
+
+  const mk = L.marker([lat, lng], {
+    icon: yellowPinIcon,
+    bubblingMouseEvents: false, // ✅ giảm ảnh hưởng tới thao tác map
+  }).addTo(map);
+
+  // ✅ dblclick mới xóa
+  mk.on("dblclick", (e) => {
+    L.DomEvent.stop(e); // ✅ chặn map nhận dblclick
+    map.removeLayer(mk);
+    addedMarkersRef.current = addedMarkersRef.current.filter((m) => m !== mk);
+  });
+
+  addedMarkersRef.current.push(mk);
+
+  map.setView([lat, lng], 18);
+};
+const handleAddPoint = () => {
+  try {
+    
+    if (coordMode === "latlng") {
+      const lat = parseFloat(latInput);
+      const lng = parseFloat(lngInput);
+
+      if (isNaN(lat) || isNaN(lng)) {
+        alert("Lat/Long không hợp lệ");
+        return;
+      }
+
+      addPointToMap(lat, lng);
+    }
+
+   if (coordMode === "vn2000") {
+  const X = parseFloat(xInput); // Northing
+  const Y = parseFloat(yInput); // Easting
+
+  if (isNaN(X) || isNaN(Y)) {
+    alert("X/Y không hợp lệ");
+    return;
+  }
+
+ const L0 = PROVINCES_L0[provinceForAddPoint];
+  if (!L0) {
+    alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
+    return;
+  }
+
+  // E=Y, N=X
+  const wgs = vn2000TM3ToWgs84(Y, X, L0);
+
+  addPointToMap(wgs.lat, wgs.lng);
+  }
+
+    setShowCoordModal(false);
+
+  } catch (err) {
+    alert("Lỗi chuyển tọa độ");
+  }
+};
+
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
@@ -1026,7 +1267,7 @@ if (!didCenterRef.current) {
 
         {/* ✅ Badge nằm ngay dưới nút đổi map */}
         <div className="map-badge-inline">
-          {mapType === "osm" ? "Đường phố" : mapType === "sat" ? "Vệ tinh" : "Map"}
+          {mapType === "osm" ? "Phố" : mapType === "sat" ? "Vệ tinh" : "Map"}
         </div>
 
        <button
@@ -1036,6 +1277,15 @@ if (!didCenterRef.current) {
           >
             <MyLocationIcon size={20} />
         </button>
+
+        <button
+          className="map-btn"
+          title="Nhập điểm vào Map"
+          onClick={() => setShowCoordModal(true)}
+          >
+          📍
+        </button>
+
       </div>
 
       <div className="map-panel">
@@ -1122,7 +1372,70 @@ if (!didCenterRef.current) {
         </div>
 
       </div>
+{showCoordModal && (
+  <div className="coord-modal">
+    <div className="coord-box">
+      <h4>Thêm điểm</h4>
 
+      <select
+        value={coordMode}
+        onChange={(e) => setCoordMode(e.target.value)}
+      >
+        <option value="latlng">Lat / Long</option>
+        <option value="vn2000">VN2000 (X,Y)</option>
+      </select>
+
+      <div style={{ marginTop: 10 }}>
+       
+        <select
+          value={provinceForAddPoint}
+          onChange={(e) => setProvinceForAddPoint(e.target.value)}
+          style={{ width: "100%", padding: 6 }}
+          disabled={coordMode !== "vn2000"} // chỉ bật khi nhập VN2000
+        >
+          {PROVINCE_NAMES.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {coordMode === "latlng" && (
+        <>
+          <input
+            placeholder="Latitude"
+            value={latInput}
+            onChange={(e) => setLatInput(e.target.value)}
+          />
+          <input
+            placeholder="Longitude"
+            value={lngInput}
+            onChange={(e) => setLngInput(e.target.value)}
+          />
+        </>
+      )}
+
+      {coordMode === "vn2000" && (
+        <>
+          <input
+            placeholder="X (Northing)"
+            value={xInput}
+            onChange={(e) => setXInput(e.target.value)}
+          />
+          <input
+            placeholder="Y (Easting)"
+            value={yInput}
+            onChange={(e) => setYInput(e.target.value)}
+          />
+        </>
+      )}
+
+      <button onClick={handleAddPoint}>Thêm</button>
+      <button onClick={() => setShowCoordModal(false)}>Hủy</button>
+    </div>
+  </div>
+)}
     </div>
   );
 }
