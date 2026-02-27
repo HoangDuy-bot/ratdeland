@@ -921,7 +921,7 @@ export default function MapBackground({
         if (!tb) return;
 
         if (isForcedCompact) {
-          tb.style.top = "5%";
+          tb.style.top = "3%";
           tb.style.bottom = "auto";
           tb.style.transform = "translateY(-3%)";
           tb.style.marginTop = "0";
