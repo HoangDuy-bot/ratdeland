@@ -111,14 +111,14 @@
     padding: 10px 10px;
     border-radius: 16px;
 
-    max-height: 35vh;
+    max-height: 30vh;
     overflow: auto;
     z-index: 18000;
   }
-
-  .row { margin-bottom: 8px; }
-  .select { height: 22px; font-size: 11px; }
-  .label { font-size: 11px; }
+  .row { margin-bottom: 4px; }
+  .label { margin-bottom: 2px; }
+  .select { height: 20px; padding: 2px 8px; }
+  .export-btn { height: 20px; font-size: 11px; }
 }
 .map-btn.active {
   background: #2563eb;
