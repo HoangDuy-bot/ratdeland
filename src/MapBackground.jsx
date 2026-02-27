@@ -11,6 +11,7 @@ import * as turf from "@turf/turf";
 
 import "@geoman-io/leaflet-geoman-free"; // ✅ thêm dòng này
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+
 const SUPABASE_PUBLIC_BASE =
   "https://nfocduuucvbcacpcivep.supabase.co/storage/v1/object/public/planning";
 
@@ -30,11 +31,11 @@ const redPinIcon = new L.Icon({
 const yellowPinIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
+
 // ✅ Danh mục tỉnh/khu vực (tile dạng Global Mapper: Z{z}/{y}/{x}.png)
 const CATALOG = [
   {
@@ -62,38 +63,35 @@ const CATALOG = [
         maxZoom: 17,
       },
       {
-    key: "chau-thanh",
-    label: "Châu Thành",
-    tileRoot: "tiles/91/chau-thanh",
-    bounds: [
-      [9.7956775828, 104.765625],
-      [11.1784018737, 105.46875],
-    ],
-    maxZoom: 17,
-    },
-
-    {
-    key: "tri-ton",
-    label: "Tri Tôn",
-    tileRoot: "tiles/91/tri-ton",
-    bounds: [
-      [9.7956775828, 104.765625],
-      [11.1784018737, 105.46875],
-    ],
-    maxZoom: 17,
-    },
-
-     {
-    key: "hon-dat",
-    label: "Hòn Đất",
-    tileRoot: "tiles/91/hon-dat",
-    bounds: [
-      [9.7956775828, 104.0625],
-      [10.4878118821, 105.46875],
-    ],
-    maxZoom: 17,
-    },
-
+        key: "chau-thanh",
+        label: "Châu Thành",
+        tileRoot: "tiles/91/chau-thanh",
+        bounds: [
+          [9.7956775828, 104.765625],
+          [11.1784018737, 105.46875],
+        ],
+        maxZoom: 17,
+      },
+      {
+        key: "tri-ton",
+        label: "Tri Tôn",
+        tileRoot: "tiles/91/tri-ton",
+        bounds: [
+          [9.7956775828, 104.765625],
+          [11.1784018737, 105.46875],
+        ],
+        maxZoom: 17,
+      },
+      {
+        key: "hon-dat",
+        label: "Hòn Đất",
+        tileRoot: "tiles/91/hon-dat",
+        bounds: [
+          [9.7956775828, 104.0625],
+          [10.4878118821, 105.46875],
+        ],
+        maxZoom: 17,
+      },
     ],
     defaultView: { lat: 10.3, lng: 105.28, zoom: 12 },
   },
@@ -253,7 +251,8 @@ function wgs84ToVn2000TM3(latitude, longitude, L0_deg) {
           tanB *
           (A * A / 2 +
             ((5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4)) / 24 +
-            ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * Math.pow(A, 6)) / 720));
+            ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * Math.pow(A, 6)) /
+              720));
 
   const Y =
     FE +
@@ -292,10 +291,12 @@ function vn2000TM3ToWgs84(E, N, L0_deg) {
 
   const phi1 =
     mu +
-    (3 * n / 2 - (27 * Math.pow(n, 3)) / 32) * Math.sin(2 * mu) +
-    ((21 * Math.pow(n, 2)) / 16 - (55 * Math.pow(n, 4)) / 32) * Math.sin(4 * mu) +
-    ((151 * Math.pow(n, 3)) / 96) * Math.sin(6 * mu) +
-    ((1097 * Math.pow(n, 4)) / 512) * Math.sin(8 * mu);
+    (3 * n) / 2 * Math.sin(2 * mu) -
+    (27 * Math.pow(n, 3)) / 32 * Math.sin(2 * mu) +
+    ((21 * Math.pow(n, 2)) / 16 - (55 * Math.pow(n, 4)) / 32) *
+      Math.sin(4 * mu) +
+    (151 * Math.pow(n, 3)) / 96 * Math.sin(6 * mu) +
+    (1097 * Math.pow(n, 4)) / 512 * Math.sin(8 * mu);
 
   const sin1 = Math.sin(phi1);
   const cos1 = Math.cos(phi1);
@@ -313,7 +314,8 @@ function vn2000TM3ToWgs84(E, N, L0_deg) {
     (N1 * tan1) /
       R1 *
       (D * D / 2 -
-        ((5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4)) / 24 +
+        ((5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * Math.pow(D, 4)) /
+          24 +
         ((61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) *
           Math.pow(D, 6)) /
           720);
@@ -386,8 +388,21 @@ const PROVINCE_NAMES = Object.keys(PROVINCES_L0).sort((a, b) =>
 
 function MyLocationIcon({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
       <path
         d="M12 2v4M12 18v4M2 12h4M18 12h4"
         fill="none"
@@ -401,8 +416,6 @@ function MyLocationIcon({ size = 20 }) {
 }
 
 // ====== helpers đo đạc + label ======
-// ✅ LUÔN m
-// ====== helpers đo đạc + label ======
 
 // ✅ LUÔN m (2 số lẻ)
 const fmtLen = (m) => `${m.toFixed(2)} m`;
@@ -411,7 +424,8 @@ const fmtLen = (m) => `${m.toFixed(2)} m`;
 const fmtArea = (m2) => `${m2.toFixed(2)} m²`;
 
 const isPolygon = (layer) => layer instanceof L.Polygon;
-const isPolylineOnly = (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon);
+const isPolylineOnly = (layer) =>
+  layer instanceof L.Polyline && !(layer instanceof L.Polygon);
 
 function flattenLatLngs(latlngs) {
   // polyline: [LatLng, LatLng...]
@@ -437,17 +451,45 @@ function centroidOfPolygon(latlngs) {
   return L.latLng(c[1], c[0]);
 }
 
-function polygonAreaM2(latlngs) {
+/**
+ * ✅ VN2000 distance (m): đổi 2 điểm WGS84 -> VN2000 TM-3 -> Euclid
+ * X = Northing (m), Y = Easting (m)
+ */
+function vn2000DistanceM(aLatLng, bLatLng, L0_deg) {
+  if (!L0_deg) return 0;
+  const p1 = wgs84ToVn2000TM3(aLatLng.lat, aLatLng.lng, L0_deg);
+  const p2 = wgs84ToVn2000TM3(bLatLng.lat, bLatLng.lng, L0_deg);
+  const dX = p2.X - p1.X; // Northing diff
+  const dY = p2.Y - p1.Y; // Easting diff
+  return Math.sqrt(dX * dX + dY * dY);
+}
+
+/**
+ * ✅ Diện tích chuẩn trắc địa/địa chính (Gauss / Shoelace) trên tọa độ phẳng VN2000 (m²)
+ * - Đổi từng đỉnh WGS84 -> VN2000 (E,N)
+ * - Áp dụng công thức Gauss (shoelace)
+ */
+function polygonAreaM2_VN2000(latlngs, L0_deg) {
+  if (!L0_deg) return 0;
   const ring = flattenLatLngs(latlngs);
-  const coords = ring.map((p) => [p.lng, p.lat]);
-  if (coords.length < 3) return 0;
+  if (!ring || ring.length < 3) return 0;
 
-  const first = coords[0];
-  const last = coords[coords.length - 1];
-  if (first[0] !== last[0] || first[1] !== last[1]) coords.push(first);
+  // tạo list điểm phẳng (x=Easting, y=Northing)
+  const pts = ring.map((p) => {
+    const vn = wgs84ToVn2000TM3(p.lat, p.lng, L0_deg);
+    return { x: vn.Y, y: vn.X };
+  });
 
-  const poly = turf.polygon([coords]);
-  return turf.area(poly);
+  // đóng vòng nếu chưa đóng
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  if (first.x !== last.x || first.y !== last.y) pts.push({ ...first });
+
+  let sum = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    sum += pts[i].x * pts[i + 1].y - pts[i + 1].x * pts[i].y;
+  }
+  return Math.abs(sum) / 2;
 }
 
 // ===== SEGMENT LABELS (mỗi đoạn/cạnh) =====
@@ -485,7 +527,10 @@ function addSegLabel(map, layer, at, text) {
   ensureSegStore(layer).push(m);
 }
 
-function updateSegmentLabels(map, layer) {
+/**
+ * ✅ Update label từng đoạn/cạnh theo VN2000
+ */
+function updateSegmentLabels(map, layer, L0_deg) {
   if (!map || !layer) return;
 
   clearSegLabels(layer);
@@ -494,19 +539,19 @@ function updateSegmentLabels(map, layer) {
   const pts = flattenLatLngs(latlngs);
   if (!pts || pts.length < 2) return;
 
-  // ✅ polyline: từng đoạn i-1 -> i
+  // polyline: từng đoạn i-1 -> i
   for (let i = 1; i < pts.length; i++) {
     const a = pts[i - 1];
     const b = pts[i];
-    const d = map.distance(a, b);
+    const d = vn2000DistanceM(a, b, L0_deg);
     addSegLabel(map, layer, segmentMid(a, b), fmtLen(d));
   }
 
-  // ✅ polygon: thêm cạnh cuối nối về đầu
+  // polygon: thêm cạnh cuối nối về đầu
   if (layer instanceof L.Polygon && pts.length >= 3) {
     const a = pts[pts.length - 1];
     const b = pts[0];
-    const d = map.distance(a, b);
+    const d = vn2000DistanceM(a, b, L0_deg);
     addSegLabel(map, layer, segmentMid(a, b), fmtLen(d));
   }
 }
@@ -523,166 +568,186 @@ function bindPermanentLabel(layer, text, atLatLng) {
   if (atLatLng) layer.openTooltip(atLatLng);
 }
 
-function updateMeasureLabel(map, layer) {
+/**
+ * ✅ Update label tổng / diện tích theo VN2000
+ */
+function updateMeasureLabel(map, layer, L0_deg) {
   if (!map || !layer) return;
 
-  // ✅ polyline: chỉ hiện từng đoạn (segment)
- if (isPolylineOnly(layer)) {
-  const pts = flattenLatLngs(layer.getLatLngs());
-  if (!pts || pts.length < 2) return;
+  // polyline: hiện từng đoạn + tổng
+  if (isPolylineOnly(layer)) {
+    const pts = flattenLatLngs(layer.getLatLngs());
+    if (!pts || pts.length < 2) return;
 
-  // (1) vẫn hiện từng đoạn
-  updateSegmentLabels(map, layer);
+    // (1) từng đoạn
+    updateSegmentLabels(map, layer, L0_deg);
 
-  // (2) tính tổng chiều dài
-  let total = 0;
-  for (let i = 1; i < pts.length; i++) {
-    total += map.distance(pts[i - 1], pts[i]);
+    // (2) tổng chiều dài (VN2000)
+    let total = 0;
+    for (let i = 1; i < pts.length; i++) {
+      total += vn2000DistanceM(pts[i - 1], pts[i], L0_deg);
+    }
+
+    // (3) label tổng ở điểm cuối
+    const lastPoint = pts[pts.length - 1];
+
+    layer.unbindTooltip();
+    layer
+      .bindTooltip(`Tổng = ${fmtLen(total)}`, {
+        permanent: true,
+        direction: "top",
+        className: "pm-measure-label",
+        opacity: 1,
+        interactive: false,
+        offset: [0, -12],
+      })
+      .openTooltip(lastPoint);
+
+    return;
   }
 
-  // (3) đặt label tổng ở điểm cuối
-  const lastPoint = pts[pts.length - 1];
-
-  layer.unbindTooltip();
-  layer
-    .bindTooltip(`Tổng = ${fmtLen(total)}`, {
-      permanent: true,
-      direction: "top",
-      className: "pm-measure-label",
-      opacity: 1,
-      interactive: false,
-      offset: [0, -12],
-    })
-    .openTooltip(lastPoint);
-
-  return;
-}
-
-  // ✅ polygon: diện tích ở giữa + từng cạnh
+  // polygon: diện tích ở giữa + từng cạnh
   if (isPolygon(layer)) {
     const latlngs = layer.getLatLngs();
 
-    // (1) label diện tích ở giữa
+    // (1) vị trí đặt label (centroid) - chỉ để đặt text ở giữa
     const center = centroidOfPolygon(latlngs);
-    const area = polygonAreaM2(latlngs);
+
+    // (2) diện tích chuẩn địa chính (VN2000 + Gauss)
+    const area = polygonAreaM2_VN2000(latlngs, L0_deg);
     bindPermanentLabel(layer, fmtArea(area), center);
 
-    // (2) label từng cạnh
-    updateSegmentLabels(map, layer);
+    // (3) label từng cạnh (VN2000)
+    updateSegmentLabels(map, layer, L0_deg);
 
     return;
   }
 }
 
-export default function MapBackground({ user, onRequireAuth, uiLocked, isForcedCompact }) {
+export default function MapBackground({
+  user,
+  onRequireAuth,
+  uiLocked,
+  isForcedCompact,
+}) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
-  
-const [isLocating, setIsLocating] = useState(false);
 
-const [provinceForConvert, setProvinceForConvert] = useState(PROVINCE_NAMES[0] || "An Giang");
+  const [isLocating, setIsLocating] = useState(false);
 
-// ===== THÊM ĐIỂM THEO TỌA ĐỘ =====
-const [showCoordModal, setShowCoordModal] = useState(false);
-const [provinceForAddPoint, setProvinceForAddPoint] = useState(PROVINCE_NAMES[0] || "An Giang");
+  const [provinceForConvert, setProvinceForConvert] = useState(
+    PROVINCE_NAMES[0] || "An Giang"
+  );
 
-const [coordMode, setCoordMode] = useState("latlng"); // latlng | vn2000
+  const measureL0 = useMemo(() => {
+    return PROVINCES_L0[provinceForConvert] || null;
+  }, [provinceForConvert]);
 
-const [latInput, setLatInput] = useState("");
-const [lngInput, setLngInput] = useState("");
+  // ===== THÊM ĐIỂM THEO TỌA ĐỘ =====
+  const [showCoordModal, setShowCoordModal] = useState(false);
+  const [provinceForAddPoint, setProvinceForAddPoint] = useState(
+    PROVINCE_NAMES[0] || "An Giang"
+  );
 
-const [xInput, setXInput] = useState("");
-const [yInput, setYInput] = useState("");
+  const [coordMode, setCoordMode] = useState("latlng"); // latlng | vn2000
 
-const baseLayerRef = useRef(null);
-const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
+  const [latInput, setLatInput] = useState("");
+  const [lngInput, setLngInput] = useState("");
 
-const drawnLayersRef = useRef([]); // ✅ lưu tất cả line/polyline/polygon đã vẽ
+  const [xInput, setXInput] = useState("");
+  const [yInput, setYInput] = useState("");
 
-const exportPointsToExcel = () => {
-  const L0 = PROVINCES_L0[provinceForConvert];
-  if (!L0) {
-    alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
-    return;
-  }
+  const baseLayerRef = useRef(null);
+  const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
 
-  const layers = drawnLayersRef.current || [];
-  if (!layers.length) {
-    alert("Chưa có đối tượng nào được vẽ để xuất.");
-    return;
-  }
+  const drawnLayersRef = useRef([]); // ✅ lưu tất cả line/polyline/polygon đã vẽ
 
-  const flatten = (latlngs) => {
-    if (!Array.isArray(latlngs)) return [];
-    if (!Array.isArray(latlngs[0])) return latlngs;        // polyline
-    if (!Array.isArray(latlngs[0][0])) return latlngs[0];  // polygon ring
-    return latlngs[0][0];
+  const exportPointsToExcel = () => {
+    const L0 = PROVINCES_L0[provinceForConvert];
+    if (!L0) {
+      alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
+      return;
+    }
+
+    const layers = drawnLayersRef.current || [];
+    if (!layers.length) {
+      alert("Chưa có đối tượng nào được vẽ để xuất.");
+      return;
+    }
+
+    const flatten = (latlngs) => {
+      if (!Array.isArray(latlngs)) return [];
+      if (!Array.isArray(latlngs[0])) return latlngs; // polyline
+      if (!Array.isArray(latlngs[0][0])) return latlngs[0]; // polygon ring
+      return latlngs[0][0];
+    };
+
+    const rows = [];
+    let stt = 1;
+
+    for (const layer of layers) {
+      if (!layer?.getLatLngs) continue;
+
+      let pts = flatten(layer.getLatLngs());
+
+      // bỏ điểm cuối nếu polygon đóng vòng
+      if (pts.length >= 2) {
+        const a = pts[0];
+        const b = pts[pts.length - 1];
+        if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
+      }
+
+      for (const p of pts) {
+        const lat = p.lat;
+        const lon = p.lng;
+
+        const vn = wgs84ToVn2000TM3(lat, lon, L0);
+
+        rows.push([
+          stt++,
+          Number(lat.toFixed(12)),
+          Number(lon.toFixed(12)),
+          Number(vn.X.toFixed(6)),
+          Number(vn.Y.toFixed(6)),
+        ]);
+      }
+    }
+
+    const header = ["STT", "Lat", "Long", "X", "Y"];
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Points");
+
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const now = new Date();
+    const fileName =
+      `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
+      `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
+      `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(
+        now.getSeconds()
+      )}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
+
+    alert(
+      `✅ Đã xuất Excel: ${fileName}\n` +
+        `📌 File được tải về Downloads của trình duyệt (hoặc nơi bạn chọn lưu).`
+    );
   };
 
-  const rows = [];
-  let stt = 1;
+  const markerRef = useRef(null);
+  const warnedAccRef = useRef(false);
+  const didCenterRef = useRef(false); // ✅ chỉ center 1 lần mỗi lần bật vị trí
+  const isLocatingRef = useRef(false);
+  const onFoundRef = useRef(null);
+  const onErrorRef = useRef(null);
 
-  for (const layer of layers) {
-    if (!layer?.getLatLngs) continue;
+  const targetMarkerRef = useRef(null); // ✅ pin đỏ đánh dấu
+  const addedMarkersRef = useRef([]); // ✅ lưu tất cả điểm bạn thêm bằng nút 📍
 
-    let pts = flatten(layer.getLatLngs());
-
-    // bỏ điểm cuối nếu polygon đóng vòng
-    if (pts.length >= 2) {
-      const a = pts[0];
-      const b = pts[pts.length - 1];
-      if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
-    }
-
-    for (const p of pts) {
-      const lat = p.lat;
-      const lon = p.lng;
-
-      const vn = wgs84ToVn2000TM3(lat, lon, L0);
-
-      rows.push([
-        stt++,
-        Number(lat.toFixed(12)),
-        Number(lon.toFixed(12)),
-        Number(vn.X.toFixed(6)),
-        Number(vn.Y.toFixed(6)),
-      ]);
-    }
-  }
-
-  const header = ["STT", "Lat", "Long", "X", "Y"];
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Points");
-
-  const pad2 = (n) => String(n).padStart(2, "0");
-  const now = new Date();
-  const fileName =
-    `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
-    `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
-    `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}.xlsx`;
-
-  XLSX.writeFile(wb, fileName);
-
-  alert(
-    `✅ Đã xuất Excel: ${fileName}\n` +
-    `📌 File được tải về Downloads của trình duyệt (hoặc nơi bạn chọn lưu).`
-  );
-};
-
-const markerRef = useRef(null);
-const warnedAccRef = useRef(false);
-const didCenterRef = useRef(false); // ✅ chỉ center 1 lần mỗi lần bật vị trí
-const isLocatingRef = useRef(false);
-const onFoundRef = useRef(null);
-const onErrorRef = useRef(null);
-
-const targetMarkerRef = useRef(null); // ✅ pin đỏ đánh dấu
-const addedMarkersRef = useRef([]); // ✅ lưu tất cả điểm bạn thêm bằng nút 📍
-
-useEffect(() => {
-  isLocatingRef.current = isLocating;
-}, [isLocating]);
+  useEffect(() => {
+    isLocatingRef.current = isLocating;
+  }, [isLocating]);
 
   // ✅ chỉ cho phép fitBounds khi đổi tỉnh
   const shouldFitOnNextOverlayRef = useRef(true);
@@ -691,8 +756,12 @@ useEffect(() => {
   const [overlayEnabled, setOverlayEnabled] = useState(false);
   const [opacity, setOpacity] = useState(0.85);
 
-  const [provinceCode, setProvinceCode] = useState(CATALOG[0]?.provinceCode ?? "91");
-  const [areaKey, setAreaKey] = useState(CATALOG[0]?.areas?.[0]?.key ?? "thoai-son");
+  const [provinceCode, setProvinceCode] = useState(
+    CATALOG[0]?.provinceCode ?? "91"
+  );
+  const [areaKey, setAreaKey] = useState(
+    CATALOG[0]?.areas?.[0]?.key ?? "thoai-son"
+  );
 
   const [approved, setApproved] = useState(false);
 
@@ -728,51 +797,54 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-  const map = mapRef.current;
-  if (!map) return;
+    const map = mapRef.current;
+    if (!map) return;
 
-  if (uiLocked) {
-    // khóa thao tác bản đồ
-    map.dragging?.disable();
-    map.scrollWheelZoom?.disable();
-    map.doubleClickZoom?.disable();
-    map.touchZoom?.disable();
-    map.boxZoom?.disable();
-    map.keyboard?.disable();
+    if (uiLocked) {
+      // khóa thao tác bản đồ
+      map.dragging?.disable();
+      map.scrollWheelZoom?.disable();
+      map.doubleClickZoom?.disable();
+      map.touchZoom?.disable();
+      map.boxZoom?.disable();
+      map.keyboard?.disable();
 
-    // khóa các mode của Geoman (nếu có)
-    if (map.pm) {
-      map.pm.disableDraw?.();
-      map.pm.disableGlobalEditMode?.();
-      map.pm.disableGlobalDragMode?.();
-      map.pm.disableGlobalRemovalMode?.();
+      // khóa các mode của Geoman (nếu có)
+      if (map.pm) {
+        map.pm.disableDraw?.();
+        map.pm.disableGlobalEditMode?.();
+        map.pm.disableGlobalDragMode?.();
+        map.pm.disableGlobalRemovalMode?.();
+      }
+    } else {
+      // mở lại thao tác
+      map.dragging?.enable();
+      map.scrollWheelZoom?.enable();
+      map.doubleClickZoom?.enable();
+      map.touchZoom?.enable();
+      map.boxZoom?.enable();
+      map.keyboard?.enable();
     }
-  } else {
-    // mở lại thao tác
-    map.dragging?.enable();
-    map.scrollWheelZoom?.enable();
-    map.doubleClickZoom?.enable();
-    map.touchZoom?.enable();
-    map.boxZoom?.enable();
-    map.keyboard?.enable();
-  }
-}, [uiLocked]);
-  
+  }, [uiLocked]);
+
   // init map
   useEffect(() => {
     if (mapRef.current) return;
 
     const map = L.map(mapEl.current, {
-  zoomControl: false,
-  attributionControl: false,
-  preferCanvas: true,
+      zoomControl: false,
+      attributionControl: false,
+      preferCanvas: true,
 
-  // ✅ thêm renderer tolerance để dễ click vào line
-  renderer: L.canvas({ tolerance: 10 }), // thử 10 -> 15 nếu vẫn khó
-});
+      // ✅ thêm renderer tolerance để dễ click vào line
+      renderer: L.canvas({ tolerance: 10 }), // thử 10 -> 15 nếu vẫn khó
+    });
 
-
-    const dv = selectedProvince?.defaultView ?? { lat: 10.8231, lng: 106.6297, zoom: 12 };
+    const dv = selectedProvince?.defaultView ?? {
+      lat: 10.8231,
+      lng: 106.6297,
+      zoom: 12,
+    };
     map.setView([dv.lat, dv.lng], dv.zoom);
 
     layers.sat.addTo(map);
@@ -782,182 +854,174 @@ useEffect(() => {
     map.doubleClickZoom.disable(); // ✅ tắt zoom khi double click
 
     // ✅ Long-press để thả pin đỏ (mobile), click phải (desktop)
-let pressTimer = null;
-let pressLatLng = null;
+    let pressTimer = null;
+    let pressLatLng = null;
 
-const placeTargetMarker = (latlng) => {
-  if (targetMarkerRef.current) {
-    targetMarkerRef.current.setLatLng(latlng);
-  } else {
-    targetMarkerRef.current = L.marker(latlng, { icon: redPinIcon }).addTo(map);
-    targetMarkerRef.current.on("click", () => {
-      map.removeLayer(targetMarkerRef.current);
-      targetMarkerRef.current = null;
+    const placeTargetMarker = (latlng) => {
+      if (targetMarkerRef.current) {
+        targetMarkerRef.current.setLatLng(latlng);
+      } else {
+        targetMarkerRef.current = L.marker(latlng, { icon: redPinIcon }).addTo(
+          map
+        );
+        targetMarkerRef.current.on("click", () => {
+          map.removeLayer(targetMarkerRef.current);
+          targetMarkerRef.current = null;
+        });
+      }
+    };
+
+    // Desktop: click phải / giữ chuột -> context menu
+    map.on("contextmenu", (e) => {
+      placeTargetMarker(e.latlng);
     });
-  }
-};
 
-// Desktop: click phải / giữ chuột -> context menu
-map.on("contextmenu", (e) => {
-  placeTargetMarker(e.latlng);
-});
+    // Mobile: nhấn đè ~450ms
+    map.on("mousedown touchstart", (e) => {
+      pressLatLng = e.latlng || (e.latlng === undefined ? null : e.latlng);
 
-// Mobile: nhấn đè ~450ms
-map.on("mousedown touchstart", (e) => {
-  // Leaflet event có thể khác nhau giữa mouse/touch
-  pressLatLng = e.latlng || (e.latlng === undefined ? null : e.latlng);
+      pressTimer = setTimeout(() => {
+        if (pressLatLng) placeTargetMarker(pressLatLng);
+      }, 450);
+    });
 
-  pressTimer = setTimeout(() => {
-    if (pressLatLng) placeTargetMarker(pressLatLng);
-  }, 450);
-});
-
-map.on("mouseup touchend touchcancel move", () => {
-  if (pressTimer) {
-    clearTimeout(pressTimer);
-    pressTimer = null;
-  }
-});
+    map.on("mouseup touchend touchcancel move", () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    });
 
     // ✅ Bật công cụ đo (Geoman)
-   // ✅ Import Geoman NGAY SAU khi tạo map
-import("@geoman-io/leaflet-geoman-free").then(() => {
-  if (!map.pm) {
-    console.error("Geoman chưa load được!");
-    return;
-  }
+    import("@geoman-io/leaflet-geoman-free").then(() => {
+      if (!map.pm) {
+        console.error("Geoman chưa load được!");
+        return;
+      }
 
-  const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
 
-  map.pm.addControls({
-    position: "topright",
-    drawMarker: false,
-    drawCircleMarker: false,
-    drawCircle: false,
-    drawRectangle: false,
-    drawText: false,
-    drawPolyline: true,
-    drawPolygon: true,
-    editMode: true,
-    dragMode: true,
-    cutPolygon: false,
-    removalMode: true,
-  });  
-const forcePmPosition = () => {
-  const tb = document.querySelector(".leaflet-pm-toolbar");
-  if (!tb) return;
+      map.pm.addControls({
+        position: "topright",
+        drawMarker: false,
+        drawCircleMarker: false,
+        drawCircle: false,
+        drawRectangle: false,
+        drawText: false,
+        drawPolyline: true,
+        drawPolygon: true,
+        editMode: true,
+        dragMode: true,
+        cutPolygon: false,
+        removalMode: true,
+      });
 
-  if (isForcedCompact) {
-    // ✅ forced compact (màn thấp/nhỏ): đẩy xuống để không đè panel/toolbar
-    tb.style.top = "1px";     // chỉnh 160~220px tùy bạn thấy hợp
-    tb.style.bottom = "auto";
-    tb.style.transform = "translateY(-3%)";
-    tb.style.marginTop = "0";
-  } else {
-    // ✅ bình thường (desktop/không forced): giữ như hiện tại
-    tb.style.top = "5%";
-    tb.style.bottom = "auto";
-    tb.style.transform = "translateY(-10%)";
-    tb.style.marginTop = "0";
-  }
-};
+      const forcePmPosition = () => {
+        const tb = document.querySelector(".leaflet-pm-toolbar");
+        if (!tb) return;
 
-// Đợi Geoman render xong
-setTimeout(forcePmPosition, 100);
-window.addEventListener("resize", forcePmPosition);
+        if (isForcedCompact) {
+          tb.style.top = "1px";
+          tb.style.bottom = "auto";
+          tb.style.transform = "translateY(-3%)";
+          tb.style.marginTop = "0";
+        } else {
+          tb.style.top = "5%";
+          tb.style.bottom = "auto";
+          tb.style.transform = "translateY(-10%)";
+          tb.style.marginTop = "0";
+        }
+      };
 
-  // ✅ tắt đo mặc định của Geoman để không ra km/ha
- map.pm.setGlobalOptions({
-  measurements: false,
-  showMeasurements: false,
-  tooltips: false,
+      setTimeout(forcePmPosition, 100);
+      window.addEventListener("resize", forcePmPosition);
 
-  // ✅ đường nối tới chuột (hint)
-  hintlineStyle: {
-    color: "#eb0c2d",
-    weight: 1.5,
-    opacity: 1,
-    dashArray: "3,6",
-  },
-});
+      // ✅ tắt đo mặc định của Geoman để không ra km/ha
+      map.pm.setGlobalOptions({
+        measurements: false,
+        showMeasurements: false,
+        tooltips: false,
 
-  // ✅ Style cho nét vẽ (mỏng lại)
-  map.pm.setPathOptions({
-    color: "#f30b0b",
-    weight: 1.5,        // <-- GIẢM ở đây: 1 / 1.5 / 2
-    opacity: 1,
-    fillColor: "#1e40af",
-    fillOpacity: 0.08 // polygon đỡ đậm
-  });
+        // ✅ đường nối tới chuột (hint)
+        hintlineStyle: {
+          color: "#eb0c2d",
+          weight: 1.5,
+          opacity: 1,
+          dashArray: "3,6",
+        },
+      });
 
-  // ✅ live khi đang vẽ
-  map.on("pm:drawstart", (e) => {
-    const layer = e.workingLayer;
-    if (!layer) return;
+      // ✅ Style cho nét vẽ (mỏng lại)
+      map.pm.setPathOptions({
+        color: "#f30b0b",
+        weight: 1.5,
+        opacity: 1,
+        fillColor: "#1e40af",
+        fillOpacity: 0.08,
+      });
 
-    // ✅ làm mỏng ngay khi đang vẽ (working layer)
-if (layer.setStyle) {
-  layer.setStyle({
-    color: "#d3e910",
-    weight: 1.5,        // <-- mỏng khi đang vẽ
-    opacity: 1,
-    fillColor: "#1e40af",
-    fillOpacity: 0.08,
-  });
-}
+      // ✅ live khi đang vẽ
+      map.on("pm:drawstart", (e) => {
+        const layer = e.workingLayer;
+        if (!layer) return;
 
-    const refresh = () => updateMeasureLabel(map, layer);
+        if (layer.setStyle) {
+          layer.setStyle({
+            color: "#d3e910",
+            weight: 1.5,
+            opacity: 1,
+            fillColor: "#1e40af",
+            fillOpacity: 0.08,
+          });
+        }
 
-    refresh();
-    layer.on("pm:vertexadded", refresh);
+        const refresh = () => updateMeasureLabel(map, layer, measureL0);
+        refresh();
+        layer.on("pm:vertexadded", refresh);
 
-    const onMove = () => refresh();
-    map.on("mousemove", onMove);
+        const onMove = () => refresh();
+        map.on("mousemove", onMove);
 
-    map.once("pm:drawend", () => {
-      map.off("mousemove", onMove);
+        map.once("pm:drawend", () => {
+          map.off("mousemove", onMove);
+        });
+      });
+
+      // ✅ sau khi tạo xong / edit / drag
+      map.on("pm:create", (e) => {
+        const layer = e.layer;
+
+        drawnLayersRef.current.push(layer); // ✅ lưu để export tất cả
+
+       updateMeasureLabel(map, layer, measureL0);
+
+        layer.on("pm:edit", () => updateMeasureLabel(map, layer, measureL0));
+        layer.on("pm:update", () => updateMeasureLabel(map, layer, measureL0));
+        layer.on("pm:dragend", () => updateMeasureLabel(map, layer, measureL0));
+      });
+
+      // ✅ Khi xóa bằng removalMode -> dọn tooltip + segment labels
+      map.on("pm:remove", (e) => {
+        const layer = e.layer;
+        if (!layer) return;
+        drawnLayersRef.current = drawnLayersRef.current.filter((l) => l !== layer);
+
+        clearSegLabels(layer);
+
+        try {
+          layer.unbindTooltip?.();
+        } catch {}
+      });
+
+      // ✅ Phòng hờ: nếu layer bị remove bằng cách khác
+      map.on("layerremove", (e) => {
+        const layer = e.layer;
+        if (!layer) return;
+        if (layer.__segLabels) clearSegLabels(layer);
+      });
+
+      console.log("✅ Geoman loaded");
     });
-  });
-
-  // ✅ sau khi tạo xong / edit / drag
- map.on("pm:create", (e) => {
-  const layer = e.layer;
-
-  drawnLayersRef.current.push(layer); // ✅ lưu để export tất cả
-
-  updateMeasureLabel(map, layer);
-
-  layer.on("pm:edit", () => updateMeasureLabel(map, layer));
-  layer.on("pm:update", () => updateMeasureLabel(map, layer));
-  layer.on("pm:dragend", () => updateMeasureLabel(map, layer));
-});
-
-  // ✅ Khi xóa bằng removalMode -> dọn tooltip + segment labels
-map.on("pm:remove", (e) => {
-  const layer = e.layer;
-  if (!layer) return;
-  drawnLayersRef.current = drawnLayersRef.current.filter((l) => l !== layer);
-  // xóa label cạnh
-  clearSegLabels(layer);
-
-  // xóa tooltip diện tích/tổng
-  try {
-    layer.unbindTooltip?.();
-  } catch {}
-});
-
-// ✅ Phòng hờ: nếu layer bị remove bằng cách khác
-map.on("layerremove", (e) => {
-  const layer = e.layer;
-  if (!layer) return;
-  if (layer.__segLabels) clearSegLabels(layer);
-});
-
-
-  console.log("✅ Geoman loaded");
-});
-
-
 
     const raf = requestAnimationFrame(() => map.invalidateSize());
     const onResize = () => map.invalidateSize();
@@ -972,14 +1036,15 @@ map.on("layerremove", (e) => {
       qhLayerRef.current = null;
       markerRef.current = null;
     };
-  }, [layers, selectedProvince]);
+  }, [layers, selectedProvince, isForcedCompact]);
 
   // change basemap
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const nextLayer = mapType === "osm" ? layers.osm : mapType === "sat" ? layers.sat : layers.hot;
+    const nextLayer =
+      mapType === "osm" ? layers.osm : mapType === "sat" ? layers.sat : layers.hot;
 
     if (baseLayerRef.current && map.hasLayer(baseLayerRef.current)) {
       map.removeLayer(baseLayerRef.current);
@@ -1032,7 +1097,19 @@ map.on("layerremove", (e) => {
     });
 
     console.log("✅ Planning template:", url);
-  }, [selectedArea, provinceCode, areaKey]);
+  }, [selectedArea, provinceCode, areaKey, overlayEnabled, opacity]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // refresh tất cả đối tượng đã vẽ theo L0 mới
+    for (const layer of drawnLayersRef.current || []) {
+      try {
+        updateMeasureLabel(map, layer, measureL0);
+      } catch {}
+    }
+  }, [measureL0]);
 
   // ✅ đổi opacity (không load lại)
   useEffect(() => {
@@ -1069,189 +1146,176 @@ map.on("layerremove", (e) => {
       }
 
       const okApproved = data?.approved === true;
-      const okNotExpired =
-        !data?.expires_at || new Date(data.expires_at) > new Date();
+      const okNotExpired = !data?.expires_at || new Date(data.expires_at) > new Date();
 
       setApproved(okApproved && okNotExpired);
     };
 
-      loadAccess();
+    loadAccess();
   }, [user]);
 
   useEffect(() => {
     if (!user) setOverlayEnabled(false);
   }, [user]);
 
-  const cycleMapType = () => setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
+  const cycleMapType = () =>
+    setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
-    const ACC_WARN_M = 50;
+  const ACC_WARN_M = 50;
 
-// nhắc người dùng bật "vị trí chính xác" cho Chrome
-const showPreciseLocationHint = () => {
-  alert(
-    "Vị trí đang sai số lớn (>50m).\n\n" +
-      "Cách khắc phục trên Android:\n" +
-      "1) Cài đặt → Ứng dụng → Chrome → Quyền → Vị trí\n" +
-      "2) Chọn 'Chỉ cho phép khi dùng ứng dụng'\n" +
-      "3) Bật 'Vị trí chính xác'\n\n" +
-      "Sau đó mở lại trang và bấm 'Vị trí của tôi'."
-  );
-};
+  // nhắc người dùng bật "vị trí chính xác" cho Chrome
+  const showPreciseLocationHint = () => {
+    alert(
+      "Vị trí đang sai số lớn (>50m).\n\n" +
+        "Cách khắc phục trên Android:\n" +
+        "1) Cài đặt → Ứng dụng → Chrome → Quyền → Vị trí\n" +
+        "2) Chọn 'Chỉ cho phép khi dùng ứng dụng'\n" +
+        "3) Bật 'Vị trí chính xác'\n\n" +
+        "Sau đó mở lại trang và bấm 'Vị trí của tôi'."
+    );
+  };
 
   const stopLocating = () => {
-  const map = mapRef.current;
-  if (!map) return;
+    const map = mapRef.current;
+    if (!map) return;
 
-  // gỡ đúng handler đã gắn
-  if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
-  if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
+    // gỡ đúng handler đã gắn
+    if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
+    if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
 
-  map.stopLocate();
+    map.stopLocate();
 
-  // ✅ Xóa marker vị trí khỏi map
-  if (markerRef.current) {
-    try {
-      map.removeLayer(markerRef.current);
-    } catch {}
-    markerRef.current = null;
-  }
-
-  onFoundRef.current = null;
-  onErrorRef.current = null;
-
-  setIsLocating(false);
-warnedAccRef.current = false;
-didCenterRef.current = false;
-};
-
-    const locateMe = () => {
-          const map = mapRef.current;
-          if (!map) return;
-
-          // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
-          if (isLocatingRef.current) {
-            stopLocating();
-            warnedAccRef.current = false;
-            return;
-          }
-
-          // ✅ Bật
-          setIsLocating(true);
-warnedAccRef.current = false;
-
-          const onFound = (e) => {
-  const { latlng, accuracy } = e;
-
-  // ✅ nếu sai số lớn thì nhắc (nhưng vẫn cho hiện vị trí)
-  if (
-  !warnedAccRef.current &&
-  typeof accuracy === "number" &&
-  accuracy > ACC_WARN_M
-) {
-  warnedAccRef.current = true;
-  showPreciseLocationHint();
-}
-
-  if (markerRef.current) {
-    markerRef.current.setLatLng(latlng);
-  } else {
-    markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
-  }
-
-  // ✅ đừng ép zoom về 20 nữa, giữ zoom hiện tại để khỏi giật
-  // ✅ chỉ center 1 lần khi vừa bật vị trí
-if (!didCenterRef.current) {
-  didCenterRef.current = true;
-  map.panTo(latlng, { animate: true });
-}
-// còn lại chỉ update marker, không kéo map về nữa
-};
-
-          const onError = () => {
-            // muốn im lặng thì bỏ alert
-            // alert("Không lấy được vị trí.");
-            stopLocating();
-          };
-
-          onFoundRef.current = onFound;
-          onErrorRef.current = onError;
-
-          map.on("locationfound", onFound);
-          map.on("locationerror", onError);
-
-          map.locate({
-            watch: true,
-            setView: false,
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
-          });
-      };
-
- // ✅ lưu danh sách marker đã thêm (để sau này dọn/xóa nếu cần)
-
-const addPointToMap = (lat, lng) => {
-  const map = mapRef.current;
-  if (!map) return;
-
-  const mk = L.marker([lat, lng], {
-    icon: yellowPinIcon,
-    bubblingMouseEvents: false, // ✅ giảm ảnh hưởng tới thao tác map
-  }).addTo(map);
-
-  // ✅ dblclick mới xóa
-  mk.on("dblclick", (e) => {
-    L.DomEvent.stop(e); // ✅ chặn map nhận dblclick
-    map.removeLayer(mk);
-    addedMarkersRef.current = addedMarkersRef.current.filter((m) => m !== mk);
-  });
-
-  addedMarkersRef.current.push(mk);
-
-  map.setView([lat, lng], 18);
-};
-const handleAddPoint = () => {
-  try {
-    
-    if (coordMode === "latlng") {
-      const lat = parseFloat(latInput);
-      const lng = parseFloat(lngInput);
-
-      if (isNaN(lat) || isNaN(lng)) {
-        alert("Lat/Long không hợp lệ");
-        return;
-      }
-
-      addPointToMap(lat, lng);
+    // ✅ Xóa marker vị trí khỏi map
+    if (markerRef.current) {
+      try {
+        map.removeLayer(markerRef.current);
+      } catch {}
+      markerRef.current = null;
     }
 
-   if (coordMode === "vn2000") {
-  const X = parseFloat(xInput); // Northing
-  const Y = parseFloat(yInput); // Easting
+    onFoundRef.current = null;
+    onErrorRef.current = null;
 
-  if (isNaN(X) || isNaN(Y)) {
-    alert("X/Y không hợp lệ");
-    return;
-  }
+    setIsLocating(false);
+    warnedAccRef.current = false;
+    didCenterRef.current = false;
+  };
 
- const L0 = PROVINCES_L0[provinceForAddPoint];
-  if (!L0) {
-    alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
-    return;
-  }
+  const locateMe = () => {
+    const map = mapRef.current;
+    if (!map) return;
 
-  // E=Y, N=X
-  const wgs = vn2000TM3ToWgs84(Y, X, L0);
+    // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
+    if (isLocatingRef.current) {
+      stopLocating();
+      warnedAccRef.current = false;
+      return;
+    }
 
-  addPointToMap(wgs.lat, wgs.lng);
-  }
+    // ✅ Bật
+    setIsLocating(true);
+    warnedAccRef.current = false;
 
-    setShowCoordModal(false);
+    const onFound = (e) => {
+      const { latlng, accuracy } = e;
 
-  } catch (err) {
-    alert("Lỗi chuyển tọa độ");
-  }
-};
+      if (!warnedAccRef.current && typeof accuracy === "number" && accuracy > ACC_WARN_M) {
+        warnedAccRef.current = true;
+        showPreciseLocationHint();
+      }
+
+      if (markerRef.current) {
+        markerRef.current.setLatLng(latlng);
+      } else {
+        markerRef.current = L.marker(latlng, { icon: pinIcon }).addTo(map);
+      }
+
+      if (!didCenterRef.current) {
+        didCenterRef.current = true;
+        map.panTo(latlng, { animate: true });
+      }
+    };
+
+    const onError = () => {
+      stopLocating();
+    };
+
+    onFoundRef.current = onFound;
+    onErrorRef.current = onError;
+
+    map.on("locationfound", onFound);
+    map.on("locationerror", onError);
+
+    map.locate({
+      watch: true,
+      setView: false,
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    });
+  };
+
+  const addPointToMap = (lat, lng) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const mk = L.marker([lat, lng], {
+      icon: yellowPinIcon,
+      bubblingMouseEvents: false,
+    }).addTo(map);
+
+    // ✅ dblclick mới xóa
+    mk.on("dblclick", (e) => {
+      L.DomEvent.stop(e);
+      map.removeLayer(mk);
+      addedMarkersRef.current = addedMarkersRef.current.filter((m) => m !== mk);
+    });
+
+    addedMarkersRef.current.push(mk);
+
+    map.setView([lat, lng], 18);
+  };
+
+  const handleAddPoint = () => {
+    try {
+      if (coordMode === "latlng") {
+        const lat = parseFloat(latInput);
+        const lng = parseFloat(lngInput);
+
+        if (isNaN(lat) || isNaN(lng)) {
+          alert("Lat/Long không hợp lệ");
+          return;
+        }
+
+        addPointToMap(lat, lng);
+      }
+
+      if (coordMode === "vn2000") {
+        const X = parseFloat(xInput); // Northing
+        const Y = parseFloat(yInput); // Easting
+
+        if (isNaN(X) || isNaN(Y)) {
+          alert("X/Y không hợp lệ");
+          return;
+        }
+
+        const L0 = PROVINCES_L0[provinceForAddPoint];
+        if (!L0) {
+          alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
+          return;
+        }
+
+        // E=Y, N=X
+        const wgs = vn2000TM3ToWgs84(Y, X, L0);
+
+        addPointToMap(wgs.lat, wgs.lng);
+      }
+
+      setShowCoordModal(false);
+    } catch (err) {
+      alert("Lỗi chuyển tọa độ");
+    }
+  };
 
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
@@ -1280,28 +1344,31 @@ const handleAddPoint = () => {
           {mapType === "osm" ? "Phố" : mapType === "sat" ? "Vệ tinh" : "Map"}
         </div>
 
-       <button
-            className={`map-btn ${isLocating ? "active" : ""}`}
-            title="Vị trí của tôi"
-            onClick={locateMe}
-          >
-            <MyLocationIcon size={20} />
+        <button
+          className={`map-btn ${isLocating ? "active" : ""}`}
+          title="Vị trí của tôi"
+          onClick={locateMe}
+        >
+          <MyLocationIcon size={20} />
         </button>
 
         <button
           className="map-btn"
           title="Nhập điểm vào Map"
           onClick={() => setShowCoordModal(true)}
-          >
+        >
           📍
         </button>
-
       </div>
 
       <div className="map-panel">
         <div className="row">
           <label className="label">Tỉnh</label>
-          <select className="select" value={provinceCode} onChange={(e) => onChangeProvince(e.target.value)}>
+          <select
+            className="select"
+            value={provinceCode}
+            onChange={(e) => onChangeProvince(e.target.value)}
+          >
             {CATALOG.map((p) => (
               <option key={p.provinceCode} value={p.provinceCode}>
                 {p.provinceName}
@@ -1312,7 +1379,11 @@ const handleAddPoint = () => {
 
         <div className="row">
           <label className="label">Khu vực</label>
-          <select className="select" value={areaKey} onChange={(e) => setAreaKey(e.target.value)}>
+          <select
+            className="select"
+            value={areaKey}
+            onChange={(e) => setAreaKey(e.target.value)}
+          >
             {selectedProvince?.areas?.map((a) => (
               <option key={a.key} value={a.key}>
                 {a.label}
@@ -1361,7 +1432,7 @@ const handleAddPoint = () => {
         </div>
 
         <div className="row">
-          <label className="label">Xuất điểm đã vẽ trên Map</label>
+          <label className="label">Xuất - Vẽ chọn đúng Tỉnh cũ</label>
           <select
             className="select"
             value={provinceForConvert}
@@ -1373,79 +1444,75 @@ const handleAddPoint = () => {
               </option>
             ))}
           </select>
-          </div>
+        </div>
 
-         <div className="row">
+        <div className="row">
           <button className="export-btn" onClick={exportPointsToExcel}>
             Xuất điểm (Excel)
           </button>
         </div>
-
-      </div>
-{showCoordModal && (
-  <div className="coord-modal">
-    <div className="coord-box">
-      <h4>Thêm điểm</h4>
-
-      <select
-        value={coordMode}
-        onChange={(e) => setCoordMode(e.target.value)}
-      >
-        <option value="latlng">Lat / Long</option>
-        <option value="vn2000">VN2000 (X,Y)</option>
-      </select>
-
-      <div style={{ marginTop: 10 }}>
-       
-        <select
-          value={provinceForAddPoint}
-          onChange={(e) => setProvinceForAddPoint(e.target.value)}
-          style={{ width: "100%", padding: 6 }}
-          disabled={coordMode !== "vn2000"} // chỉ bật khi nhập VN2000
-        >
-          {PROVINCE_NAMES.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {coordMode === "latlng" && (
-        <>
-          <input
-            placeholder="Latitude"
-            value={latInput}
-            onChange={(e) => setLatInput(e.target.value)}
-          />
-          <input
-            placeholder="Longitude"
-            value={lngInput}
-            onChange={(e) => setLngInput(e.target.value)}
-          />
-        </>
-      )}
+      {showCoordModal && (
+        <div className="coord-modal">
+          <div className="coord-box">
+            <h4>Thêm điểm</h4>
 
-      {coordMode === "vn2000" && (
-        <>
-          <input
-            placeholder="X (Northing)"
-            value={xInput}
-            onChange={(e) => setXInput(e.target.value)}
-          />
-          <input
-            placeholder="Y (Easting)"
-            value={yInput}
-            onChange={(e) => setYInput(e.target.value)}
-          />
-        </>
-      )}
+            <select value={coordMode} onChange={(e) => setCoordMode(e.target.value)}>
+              <option value="latlng">Lat / Long</option>
+              <option value="vn2000">VN2000 (X,Y)</option>
+            </select>
 
-      <button onClick={handleAddPoint}>Thêm</button>
-      <button onClick={() => setShowCoordModal(false)}>Hủy</button>
-    </div>
-  </div>
-)}
+            <div style={{ marginTop: 10 }}>
+              <select
+                value={provinceForAddPoint}
+                onChange={(e) => setProvinceForAddPoint(e.target.value)}
+                style={{ width: "100%", padding: 6 }}
+                disabled={coordMode !== "vn2000"}
+              >
+                {PROVINCE_NAMES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {coordMode === "latlng" && (
+              <>
+                <input
+                  placeholder="Latitude"
+                  value={latInput}
+                  onChange={(e) => setLatInput(e.target.value)}
+                />
+                <input
+                  placeholder="Longitude"
+                  value={lngInput}
+                  onChange={(e) => setLngInput(e.target.value)}
+                />
+              </>
+            )}
+
+            {coordMode === "vn2000" && (
+              <>
+                <input
+                  placeholder="X (Northing)"
+                  value={xInput}
+                  onChange={(e) => setXInput(e.target.value)}
+                />
+                <input
+                  placeholder="Y (Easting)"
+                  value={yInput}
+                  onChange={(e) => setYInput(e.target.value)}
+                />
+              </>
+            )}
+
+            <button onClick={handleAddPoint}>Thêm</button>
+            <button onClick={() => setShowCoordModal(false)}>Hủy</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

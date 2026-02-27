@@ -102,16 +102,16 @@
 /* ===== MOBILE ===== */
 @media (max-width: 640px) {
   .map-panel {
-    left: auto;
-    right: 2%;
+    left: 55%;
+    right: auto;
 
-    top: auto;
-    bottom: 2%;          /* ✅ sát đáy */
-    width: min(46vw, 240px); /* ✅ khoảng nửa hiện tại */
+    top: 2%;
+    bottom: auto;
+    width: min(46vw, 240px);
     padding: 10px 10px;
     border-radius: 16px;
 
-    max-height: 30vh;
+    max-height: 35vh;
     overflow: auto;
     z-index: 18000;
   }
@@ -153,10 +153,9 @@
 .coord-box {
   position: absolute;
 
-  top: 10%;       /* cách lề trên 10% */
-  left: 60%;      /* desktop cách trái 60% */
-
-  transform: translateX(-50%); /* căn giữa theo trục 60% */
+  top: 15%;          /* ✅ desktop nằm sát trên 30% */
+  left: 60%;         /* ✅ căn giữa desktop (hoặc chỉnh lại theo ý) */
+  transform: translateX(-50%);
 
   width: 280px;
   padding: 12px;
@@ -166,6 +165,16 @@
   flex-direction: column;
   gap: 6px;
 }
+
+@media (max-width: 640px) {
+  .coord-box {
+    top: 50%;     /* ✅ mobile giữ như bạn đang dùng */
+    left: 45%;
+    transform: translateX(-50%);
+    width: min(86vw, 320px);  /* ✅ gọn hơn trên mobile */
+  }
+}
+
 .coord-box h4{
   margin: 0 0 6px 0;   /* ✅ top = 0 => sát mép */
   padding: 0;
