@@ -19,7 +19,7 @@ export default function AuthModal({ open, onClose }) {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMsg("✅ Đăng ký thành công.");
+        setMsg("✅ Đăng ký thành công. Hãy vào mail để xác nhận và chờ duyệt");
      } else {
      const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
