@@ -102,7 +102,7 @@
 /* ===== MOBILE ===== */
 @media (max-width: 640px) {
   .map-panel {
-    left: 55%;
+    left: 10%;
     right: auto;
 
     top: 2%;
@@ -187,12 +187,4 @@
   font-weight: 700;     /* in đậm */
   font-size: 13px;
   color: #0c0c0c;
-}
-
-/* ✅ Màn hình thấp (forced compact theo height) -> panel cao hơn để thấy đủ mục */
-@media (max-height: 520px) {
-  .map-panel {
-    max-height: 55vh;
-    overflow: auto;
-  }
 }
