@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
 export default function AuthModal({ open, onClose }) {
@@ -9,6 +9,11 @@ export default function AuthModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // mở modal thì reset thông báo
+  useEffect(() => {
+    if (open) setMsg("");
+  }, [open]);
+
   if (!open) return null;
 
   const handleAuth = async () => {
@@ -16,35 +21,81 @@ export default function AuthModal({ open, onClose }) {
     setLoading(true);
 
     try {
+      const cleanEmail = email.trim();
+
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMsg("✅ Đăng ký thành công. Hãy vào mail để xác nhận và chờ duyệt");
-     } else {
-     const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+        });
         if (error) throw error;
 
-        // ✅ THÊM DÒNG NÀY: đá tất cả thiết bị khác
-        await supabase.auth.signOut({ scope: "others" });
+        setMsg("✅ Đăng ký thành công. Hãy vào mail để xác nhận và chờ duyệt.");
+        return;
+      }
 
-        setMsg("✅ Đăng nhập thành công!");
-        onClose?.();
-            }
+      // ===== LOGIN =====
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+      if (error) throw error;
+
+      // lấy user chắc chắn
+      const u = data?.user || (await supabase.auth.getUser()).data.user;
+      if (!u) throw new Error("Không lấy được thông tin user. Liên hệ 0918745639");
+
+      // kiểm tra quyền ở user_access
+      const { data: access, error: accessErr } = await supabase
+        .from("user_access")
+        .select("approved, expires_at")
+        .eq("user_id", u.id)
+        .maybeSingle();
+
+      if (accessErr) throw accessErr;
+
+      const okApproved = access?.approved === true;
+      const okNotExpired = !access?.expires_at || new Date(access.expires_at) > new Date();
+
+      // ❌ chưa duyệt / hết hạn -> đá ra ngay, KHÔNG đóng modal
+      if (!okApproved || !okNotExpired) {
+        await supabase.auth.signOut();
+        setMsg("❌ Tài khoản chưa được duyệt hoặc đã hết hạn. Liên hệ 0918745639.");
+        return;
+      }
+
+      // ✅ ok -> đá các thiết bị khác
+      await supabase.auth.signOut({ scope: "others" });
+
+      setMsg("✅ Đăng nhập thành công!");
+      onClose?.();
     } catch (e) {
-      setMsg(`❌ ${e.message || "Có lỗi xảy ra"}`);
+      const raw = (e?.message || "").toLowerCase();
+
+      let friendly = e?.message || "Có lỗi xảy ra";
+
+      if (raw.includes("invalid login credentials")) {
+        friendly = "Sai email hoặc mật khẩu";
+      } else if (raw.includes("email not confirmed")) {
+        friendly = "Email chưa xác nhận. Vui lòng vào mail bấm link xác nhận.";
+      } else if (raw.includes("user already registered")) {
+        friendly = "Email này đã được đăng ký. Hãy chọn Đăng nhập.";
+      }
+
+      setMsg(`❌ ${friendly}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-   <div style={styles.backdrop}>
-  <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div style={styles.backdrop} onClick={onClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-          <h3 style={{ margin: 0 }}>
-            {mode === "login" ? "Đăng nhập" : "Đăng ký"}
-          </h3>
-          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          <h3 style={{ margin: 0 }}>{mode === "login" ? "Đăng nhập" : "Đăng ký"}</h3>
+          <button style={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
         </div>
 
         <div style={{ marginTop: 12 }}>
@@ -55,6 +106,7 @@ export default function AuthModal({ open, onClose }) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             type="email"
+            autoComplete="email"
           />
         </div>
 
@@ -66,35 +118,44 @@ export default function AuthModal({ open, onClose }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             type="password"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
           />
         </div>
 
-        {msg && (
-          <div style={{ marginTop: 10, fontSize: 14, opacity: 0.9 }}>
-            {msg}
-          </div>
-        )}
+        {msg && <div style={{ marginTop: 10, fontSize: 14, opacity: 0.95 }}>{msg}</div>}
 
         <button
           style={{ ...styles.primaryBtn, opacity: loading ? 0.7 : 1 }}
           onClick={handleAuth}
-          disabled={loading || !email || !password}
+          disabled={loading || !email.trim() || !password}
         >
-          {loading ? "Đang xử lý..." : (mode === "login" ? "Đăng nhập" : "Đăng ký")}
+          {loading ? "Đang xử lý..." : mode === "login" ? "Đăng nhập" : "Đăng ký"}
         </button>
 
         <div style={{ marginTop: 12, fontSize: 14 }}>
           {mode === "login" ? (
             <>
               Chưa có tài khoản?{" "}
-              <button style={styles.linkBtn} onClick={() => setMode("signup")}>
+              <button
+                style={styles.linkBtn}
+                onClick={() => {
+                  setMode("signup");
+                  setMsg("");
+                }}
+              >
                 Đăng ký
               </button>
             </>
           ) : (
             <>
               Đã có tài khoản?{" "}
-              <button style={styles.linkBtn} onClick={() => setMode("login")}>
+              <button
+                style={styles.linkBtn}
+                onClick={() => {
+                  setMode("login");
+                  setMsg("");
+                }}
+              >
                 Đăng nhập
               </button>
             </>

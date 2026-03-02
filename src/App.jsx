@@ -100,6 +100,14 @@ export default function App() {
         !data?.expires_at || new Date(data.expires_at) > new Date();
 
       setApproved(okApproved && okNotExpired);
+      const allowed = okApproved && okNotExpired;
+      setApproved(allowed);
+      setCheckingAccess(false);
+
+      if (!allowed) {
+        await supabase.auth.signOut();
+  setAuthOpen(true);
+}
       setCheckingAccess(false);
     };
 
