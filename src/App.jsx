@@ -8,32 +8,45 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState(null);
 
+  // ✅ NEW: kiểm tra quyền approved
+  const [approved, setApproved] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+
   // ✅ thêm state mở/đóng sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // ✅ Auto: width <= 768 OR height <= 768
-const [isAutoCompact, setIsAutoCompact] = useState(
-  window.innerWidth <= 768 || window.innerHeight <= 500
-);
 
-const handleToggleCompact = () => {
-  if (compactMode) {
-    // đang 3 gạch -> ép mở rộng desktop
-    setForceMode("desktop");
-    setSidebarOpen(false);
-  } else {
-    // đang desktop -> ép thu nhỏ 3 gạch
-    setForceMode("compact");
-    setSidebarOpen(false);
-  }
-};
+  // ✅ Auto: width <= 768 OR height <= 500
+  const [isAutoCompact, setIsAutoCompact] = useState(
+    window.innerWidth <= 768 || window.innerHeight <= 500
+  );
 
-// null = AUTO, "compact" = ép 3 gạch, "desktop" = ép mở rộng
-const [forceMode, setForceMode] = useState(null);
+  // null = AUTO, "compact" = ép 3 gạch, "desktop" = ép mở rộng
+  const [forceMode, setForceMode] = useState(null);
+
+  const compactMode =
+    forceMode === "compact" ? true :
+    forceMode === "desktop" ? false :
+    isAutoCompact;
+
+  const isForcedCompact = forceMode === null && isAutoCompact;
+
+  const handleToggleCompact = () => {
+    if (compactMode) {
+      // đang 3 gạch -> ép mở rộng desktop
+      setForceMode("desktop");
+      setSidebarOpen(false);
+    } else {
+      // đang desktop -> ép thu nhỏ 3 gạch
+      setForceMode("compact");
+      setSidebarOpen(false);
+    }
+  };
 
   const logout = async () => {
     await supabase.auth.signOut();
   };
 
+  // 1) lấy user + lắng nghe auth
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
 
@@ -44,62 +57,96 @@ const [forceMode, setForceMode] = useState(null);
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // 2) auto compact khi resize
   useEffect(() => {
-  const onResize = () => {
-    setIsAutoCompact(window.innerWidth <= 768 || window.innerHeight <= 500);
-  };
+    const onResize = () => {
+      setIsAutoCompact(window.innerWidth <= 768 || window.innerHeight <= 500);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-  window.addEventListener("resize", onResize);
-  return () => window.removeEventListener("resize", onResize);
-}, []);
+  // ✅ NEW: auto mở modal khi chưa login
+  useEffect(() => {
+    if (!user) setAuthOpen(true);
+  }, [user]);
 
-  const compactMode =
-  forceMode === "compact" ? true :
-  forceMode === "desktop" ? false :
-  isAutoCompact;
+  // ✅ NEW: load quyền từ user_access để chặn map
+  useEffect(() => {
+    const loadAccess = async () => {
+      if (!user) {
+        setApproved(false);
+        setCheckingAccess(false);
+        return;
+      }
 
-  const isForcedCompact = forceMode === null && isAutoCompact;
+      setCheckingAccess(true);
 
-return (
-   <div
-  className={`app ${compactMode ? "compact" : ""} ${sidebarOpen ? "sidebar-open" : ""} ${
-    authOpen ? "modal-open" : ""
-  }`}
->
+      const { data, error } = await supabase
+        .from("user_access")
+        .select("approved, expires_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.log("user_access error:", error);
+        setApproved(false);
+        setCheckingAccess(false);
+        return;
+      }
+
+      const okApproved = data?.approved === true;
+      const okNotExpired =
+        !data?.expires_at || new Date(data.expires_at) > new Date();
+
+      setApproved(okApproved && okNotExpired);
+      setCheckingAccess(false);
+    };
+
+    loadAccess();
+  }, [user]);
+
+  return (
+    <div
+      className={`app ${compactMode ? "compact" : ""} ${sidebarOpen ? "sidebar-open" : ""} ${
+        authOpen ? "modal-open" : ""
+      }`}
+    >
       {/* ✅ nút mở menu (chỉ hiện ở mobile nhờ CSS) */}
-     {compactMode && (
-      <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-        ☰
-      </button>
+      {compactMode && (
+        <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+          ☰
+        </button>
       )}
 
       {/* ✅ backdrop (mobile) */}
-      {compactMode && sidebarOpen && <div className="backdrop" onClick={() => setSidebarOpen(false)} />}
+      {compactMode && sidebarOpen && (
+        <div className="backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
 
-     {!isForcedCompact && (
-  <button
-    className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
-      compactMode && !sidebarOpen ? "is-closed" : ""
-    }`}
-    onClick={handleToggleCompact}
-    title={compactMode ? "Mở rộng" : "Thu nhỏ"}
-  >
-    {compactMode ? ">" : "<"}
-  </button>
-)}
+      {!isForcedCompact && (
+        <button
+          className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
+            compactMode && !sidebarOpen ? "is-closed" : ""
+          }`}
+          onClick={handleToggleCompact}
+          title={compactMode ? "Mở rộng" : "Thu nhỏ"}
+        >
+          {compactMode ? ">" : "<"}
+        </button>
+      )}
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-       
         <div className="brand">
           <h1 className="title">RATDELand</h1>
           <p
             className="subtitle"
             style={{
               cursor: "pointer",
-              color: "#ef4444",   // đỏ đẹp (Tailwind red-500)
-              fontWeight: "800",  // đậm hơn
-              fontSize: "18px",   // to hơn một chút
+              color: "#ef4444",
+              fontWeight: "800",
+              fontSize: "18px",
             }}
             onClick={() => {
               window.open(
@@ -109,7 +156,7 @@ return (
             }}
           >
             Phần mềm địa chính RATDE
-        </p>
+          </p>
         </div>
 
         <div className="auth">
@@ -121,7 +168,7 @@ return (
               className="btn"
               onClick={() => {
                 setAuthOpen(true);
-                setSidebarOpen(false); // ✅ đóng drawer khi mở modal
+                setSidebarOpen(false);
               }}
             >
               Đăng nhập / Đăng ký
@@ -140,14 +187,32 @@ return (
         </div>
       </div>
 
-      {/* Map */}
+      {/* Map / Gate */}
       <div className="main" onClick={() => compactMode && setSidebarOpen(false)}>
-        <MapBackground
-  user={user}
-  onRequireAuth={() => setAuthOpen(true)}
-  uiLocked={sidebarOpen || authOpen}
-  isForcedCompact={isForcedCompact}
-/>
+        {checkingAccess ? (
+          <div style={{ padding: 24, color: "white" }}>
+            Đang kiểm tra quyền truy cập...
+          </div>
+        ) : !user ? (
+          <div style={{ padding: 24, color: "white" }}>
+            Vui lòng đăng nhập để sử dụng.
+          </div>
+        ) : !approved ? (
+          <div style={{ padding: 24, color: "white" }}>
+            Tài khoản của bạn chưa được duyệt hoặc đã hết hạn.
+            <div style={{ marginTop: 12 }}>
+              <button className="btn" onClick={logout}>Đăng xuất</button>
+            </div>
+          </div>
+        ) : (
+          <MapBackground
+            user={user}
+            approved={approved}
+            onRequireAuth={() => setAuthOpen(true)}
+            uiLocked={sidebarOpen || authOpen}
+            isForcedCompact={isForcedCompact}
+          />
+        )}
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />

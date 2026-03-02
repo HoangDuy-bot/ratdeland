@@ -624,12 +624,7 @@ function updateMeasureLabel(map, layer, L0_deg) {
   }
 }
 
-export default function MapBackground({
-  user,
-  onRequireAuth,
-  uiLocked,
-  isForcedCompact,
-}) {
+export default function MapBackground({ user, approved, onRequireAuth, uiLocked, isForcedCompact }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
@@ -762,8 +757,6 @@ export default function MapBackground({
   const [areaKey, setAreaKey] = useState(
     CATALOG[0]?.areas?.[0]?.key ?? "thoai-son"
   );
-
-  const [approved, setApproved] = useState(false);
 
   const selectedProvince = useMemo(
     () => CATALOG.find((p) => p.provinceCode === provinceCode),
@@ -1124,35 +1117,6 @@ export default function MapBackground({
     if (overlayEnabled) qhLayerRef.current.addTo(map);
     else map.removeLayer(qhLayerRef.current);
   }, [overlayEnabled]);
-
-  // thêm cái tài khoản
-  useEffect(() => {
-    const loadAccess = async () => {
-      if (!user) {
-        setApproved(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("user_access")
-        .select("approved, expires_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.log("user_access error:", error);
-        setApproved(false);
-        return;
-      }
-
-      const okApproved = data?.approved === true;
-      const okNotExpired = !data?.expires_at || new Date(data.expires_at) > new Date();
-
-      setApproved(okApproved && okNotExpired);
-    };
-
-    loadAccess();
-  }, [user]);
 
   useEffect(() => {
     if (!user) setOverlayEnabled(false);
