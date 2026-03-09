@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import * as turf from "@turf/turf";
 
-import "@geoman-io/leaflet-geoman-free"; // ✅ thêm dòng này
+import "@geoman-io/leaflet-geoman-free";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
 const SUPABASE_PUBLIC_BASE =
@@ -22,12 +22,15 @@ const pinIcon = new L.Icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
+
 const redPinIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
+
 const yellowPinIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
@@ -36,7 +39,23 @@ const yellowPinIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-// ✅ Danh mục tỉnh/khu vực (tile dạng Global Mapper: Z{z}/{y}/{x}.png)
+// ===== LocalStorage helpers =====
+function readLS(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw !== null ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLS(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
+// ✅ Danh mục tỉnh/khu vực
 const CATALOG = [
   {
     provinceCode: "91",
@@ -97,7 +116,7 @@ const CATALOG = [
   },
 ];
 
-// ===== Provinces (VN2000 TM-3 central meridian L0) - giống VS =====
+// ===== Provinces (VN2000 TM-3 central meridian L0) =====
 const PROVINCES_L0 = {
   "Lai Châu": 103,
   "Điện Biên": 103,
@@ -262,13 +281,10 @@ function wgs84ToVn2000TM3(latitude, longitude, L0_deg) {
           ((1 - T + C) * Math.pow(A, 3)) / 6 +
           ((5 - 18 * T + T * T + 72 * C - 58 * ep2) * Math.pow(A, 5)) / 120));
 
-  return { X, Y }; // X=Northing, Y=Easting
+  return { X, Y };
 }
 
 function vn2000TM3ToWgs84(E, N, L0_deg) {
-  // E = Easting (Y), N = Northing (X)
-  // L0_deg: kinh tuyến trục theo tỉnh (giống PROVINCES_L0)
-
   const a = 6378137.0;
   const invF = 298.25722356;
   const f = 1.0 / invF;
@@ -281,7 +297,6 @@ function vn2000TM3ToWgs84(E, N, L0_deg) {
 
   const L0 = (L0_deg * Math.PI) / 180.0;
 
-  // ===== 1) Inverse TM-3: (E,N) -> (phi, lam) trên datum VN2000 =====
   const M = (N - FN) / k0;
 
   const n = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
@@ -329,7 +344,6 @@ function vn2000TM3ToWgs84(E, N, L0_deg) {
         120) /
       cos1;
 
-  // ===== 2) (phi,lam) -> ECEF VN2000 =====
   const H = 0.0;
 
   const sinPhi = Math.sin(phi);
@@ -343,7 +357,6 @@ function vn2000TM3ToWgs84(E, N, L0_deg) {
   const Yv = (Nphi + H) * cosPhi * sinLam;
   const Zv = (Nphi * (1 - e2) + H) * sinPhi;
 
-  // ===== 3) Bursa-Wolf VN2000 -> WGS84 (forward) =====
   const Tx = -191.90441429;
   const Ty = -39.30318279;
   const Tz = -111.45032835;
@@ -363,7 +376,6 @@ function vn2000TM3ToWgs84(E, N, L0_deg) {
   const Yw = Ty + k * (rz * Xv + Yv - rx * Zv);
   const Zw = Tz + k * (-ry * Xv + rx * Yv + Zv);
 
-  // ===== 4) ECEF WGS84 -> (lat,lon) =====
   const lon = Math.atan2(Yw, Xw);
   const p = Math.sqrt(Xw * Xw + Yw * Yw);
 
@@ -415,12 +427,8 @@ function MyLocationIcon({ size = 20 }) {
   );
 }
 
-// ====== helpers đo đạc + label ======
-
-// ✅ LUÔN m (2 số lẻ)
+// ===== helpers đo đạc + label =====
 const fmtLen = (m) => `${m.toFixed(2)} m`;
-
-// ✅ LUÔN m² (2 số lẻ)
 const fmtArea = (m2) => `${m2.toFixed(2)} m²`;
 
 const isPolygon = (layer) => layer instanceof L.Polygon;
@@ -428,12 +436,10 @@ const isPolylineOnly = (layer) =>
   layer instanceof L.Polyline && !(layer instanceof L.Polygon);
 
 function flattenLatLngs(latlngs) {
-  // polyline: [LatLng, LatLng...]
-  // polygon: [[LatLng...]] hoặc [[[LatLng...]]]
   if (!Array.isArray(latlngs)) return [];
-  if (!Array.isArray(latlngs[0])) return latlngs; // polyline
-  if (!Array.isArray(latlngs[0][0])) return latlngs[0]; // polygon 1 ring
-  return latlngs[0][0]; // multipolygon (lấy ring đầu)
+  if (!Array.isArray(latlngs[0])) return latlngs;
+  if (!Array.isArray(latlngs[0][0])) return latlngs[0];
+  return latlngs[0][0];
 }
 
 function centroidOfPolygon(latlngs) {
@@ -441,46 +447,34 @@ function centroidOfPolygon(latlngs) {
   const coords = ring.map((p) => [p.lng, p.lat]);
   if (coords.length < 3) return null;
 
-  // turf polygon cần đóng vòng
   const first = coords[0];
   const last = coords[coords.length - 1];
   if (first[0] !== last[0] || first[1] !== last[1]) coords.push(first);
 
   const poly = turf.polygon([coords]);
-  const c = turf.centroid(poly).geometry.coordinates; // [lng, lat]
+  const c = turf.centroid(poly).geometry.coordinates;
   return L.latLng(c[1], c[0]);
 }
 
-/**
- * ✅ VN2000 distance (m): đổi 2 điểm WGS84 -> VN2000 TM-3 -> Euclid
- * X = Northing (m), Y = Easting (m)
- */
 function vn2000DistanceM(aLatLng, bLatLng, L0_deg) {
   if (!L0_deg) return 0;
   const p1 = wgs84ToVn2000TM3(aLatLng.lat, aLatLng.lng, L0_deg);
   const p2 = wgs84ToVn2000TM3(bLatLng.lat, bLatLng.lng, L0_deg);
-  const dX = p2.X - p1.X; // Northing diff
-  const dY = p2.Y - p1.Y; // Easting diff
+  const dX = p2.X - p1.X;
+  const dY = p2.Y - p1.Y;
   return Math.sqrt(dX * dX + dY * dY);
 }
 
-/**
- * ✅ Diện tích chuẩn trắc địa/địa chính (Gauss / Shoelace) trên tọa độ phẳng VN2000 (m²)
- * - Đổi từng đỉnh WGS84 -> VN2000 (E,N)
- * - Áp dụng công thức Gauss (shoelace)
- */
 function polygonAreaM2_VN2000(latlngs, L0_deg) {
   if (!L0_deg) return 0;
   const ring = flattenLatLngs(latlngs);
   if (!ring || ring.length < 3) return 0;
 
-  // tạo list điểm phẳng (x=Easting, y=Northing)
   const pts = ring.map((p) => {
     const vn = wgs84ToVn2000TM3(p.lat, p.lng, L0_deg);
     return { x: vn.Y, y: vn.X };
   });
 
-  // đóng vòng nếu chưa đóng
   const first = pts[0];
   const last = pts[pts.length - 1];
   if (first.x !== last.x || first.y !== last.y) pts.push({ ...first });
@@ -492,7 +486,6 @@ function polygonAreaM2_VN2000(latlngs, L0_deg) {
   return Math.abs(sum) / 2;
 }
 
-// ===== SEGMENT LABELS (mỗi đoạn/cạnh) =====
 function segmentMid(a, b) {
   return L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2);
 }
@@ -506,14 +499,13 @@ export function clearSegLabels(layer) {
   const arr = layer?.__segLabels || [];
   arr.forEach((m) => {
     try {
-      m.remove(); // ✅ chắc chắn remove khỏi map
+      m.remove();
     } catch {}
   });
   if (layer) layer.__segLabels = [];
 }
 
 function addSegLabel(map, layer, at, text) {
-  // marker + divIcon để đứng giữa đoạn (không phụ thuộc tooltip geoman)
   const m = L.marker(at, {
     interactive: false,
     keyboard: false,
@@ -527,9 +519,6 @@ function addSegLabel(map, layer, at, text) {
   ensureSegStore(layer).push(m);
 }
 
-/**
- * ✅ Update label từng đoạn/cạnh theo VN2000
- */
 function updateSegmentLabels(map, layer, L0_deg) {
   if (!map || !layer) return;
 
@@ -539,7 +528,6 @@ function updateSegmentLabels(map, layer, L0_deg) {
   const pts = flattenLatLngs(latlngs);
   if (!pts || pts.length < 2) return;
 
-  // polyline: từng đoạn i-1 -> i
   for (let i = 1; i < pts.length; i++) {
     const a = pts[i - 1];
     const b = pts[i];
@@ -547,7 +535,6 @@ function updateSegmentLabels(map, layer, L0_deg) {
     addSegLabel(map, layer, segmentMid(a, b), fmtLen(d));
   }
 
-  // polygon: thêm cạnh cuối nối về đầu
   if (layer instanceof L.Polygon && pts.length >= 3) {
     const a = pts[pts.length - 1];
     const b = pts[0];
@@ -568,27 +555,20 @@ function bindPermanentLabel(layer, text, atLatLng) {
   if (atLatLng) layer.openTooltip(atLatLng);
 }
 
-/**
- * ✅ Update label tổng / diện tích theo VN2000
- */
 function updateMeasureLabel(map, layer, L0_deg) {
   if (!map || !layer) return;
 
-  // polyline: hiện từng đoạn + tổng
   if (isPolylineOnly(layer)) {
     const pts = flattenLatLngs(layer.getLatLngs());
     if (!pts || pts.length < 2) return;
 
-    // (1) từng đoạn
     updateSegmentLabels(map, layer, L0_deg);
 
-    // (2) tổng chiều dài (VN2000)
     let total = 0;
     for (let i = 1; i < pts.length; i++) {
       total += vn2000DistanceM(pts[i - 1], pts[i], L0_deg);
     }
 
-    // (3) label tổng ở điểm cuối
     const lastPoint = pts[pts.length - 1];
 
     layer.unbindTooltip();
@@ -606,25 +586,22 @@ function updateMeasureLabel(map, layer, L0_deg) {
     return;
   }
 
-  // polygon: diện tích ở giữa + từng cạnh
   if (isPolygon(layer)) {
     const latlngs = layer.getLatLngs();
-
-    // (1) vị trí đặt label (centroid) - chỉ để đặt text ở giữa
     const center = centroidOfPolygon(latlngs);
-
-    // (2) diện tích chuẩn địa chính (VN2000 + Gauss)
     const area = polygonAreaM2_VN2000(latlngs, L0_deg);
     bindPermanentLabel(layer, fmtArea(area), center);
-
-    // (3) label từng cạnh (VN2000)
     updateSegmentLabels(map, layer, L0_deg);
-
-    return;
   }
 }
 
-export default function MapBackground({ user, approved, onRequireAuth, uiLocked, isForcedCompact }) {
+export default function MapBackground({
+  user,
+  approved,
+  onRequireAuth,
+  uiLocked,
+  isForcedCompact,
+}) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
@@ -638,124 +615,44 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     return PROVINCES_L0[provinceForConvert] || null;
   }, [provinceForConvert]);
 
-  // ===== THÊM ĐIỂM THEO TỌA ĐỘ =====
   const [showCoordModal, setShowCoordModal] = useState(false);
   const [provinceForAddPoint, setProvinceForAddPoint] = useState(
     PROVINCE_NAMES[0] || "An Giang"
   );
 
-  const [coordMode, setCoordMode] = useState("latlng"); // latlng | vn2000
-
+  const [coordMode, setCoordMode] = useState("latlng");
   const [latInput, setLatInput] = useState("");
   const [lngInput, setLngInput] = useState("");
-
   const [xInput, setXInput] = useState("");
   const [yInput, setYInput] = useState("");
 
   const baseLayerRef = useRef(null);
-  const qhLayerRef = useRef(null); // ✅ tile layer quy hoạch
-
-  const drawnLayersRef = useRef([]); // ✅ lưu tất cả line/polyline/polygon đã vẽ
-
-  const exportPointsToExcel = () => {
-    const L0 = PROVINCES_L0[provinceForConvert];
-    if (!L0) {
-      alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
-      return;
-    }
-
-    const layers = drawnLayersRef.current || [];
-    if (!layers.length) {
-      alert("Chưa có đối tượng nào được vẽ để xuất.");
-      return;
-    }
-
-    const flatten = (latlngs) => {
-      if (!Array.isArray(latlngs)) return [];
-      if (!Array.isArray(latlngs[0])) return latlngs; // polyline
-      if (!Array.isArray(latlngs[0][0])) return latlngs[0]; // polygon ring
-      return latlngs[0][0];
-    };
-
-    const rows = [];
-    let stt = 1;
-
-    for (const layer of layers) {
-      if (!layer?.getLatLngs) continue;
-
-      let pts = flatten(layer.getLatLngs());
-
-      // bỏ điểm cuối nếu polygon đóng vòng
-      if (pts.length >= 2) {
-        const a = pts[0];
-        const b = pts[pts.length - 1];
-        if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
-      }
-
-      for (const p of pts) {
-        const lat = p.lat;
-        const lon = p.lng;
-
-        const vn = wgs84ToVn2000TM3(lat, lon, L0);
-
-        rows.push([
-          stt++,
-          Number(lat.toFixed(12)),
-          Number(lon.toFixed(12)),
-          Number(vn.X.toFixed(6)),
-          Number(vn.Y.toFixed(6)),
-        ]);
-      }
-    }
-
-    const header = ["STT", "Lat", "Long", "X", "Y"];
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Points");
-
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const now = new Date();
-    const fileName =
-      `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
-      `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
-      `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(
-        now.getSeconds()
-      )}.xlsx`;
-
-    XLSX.writeFile(wb, fileName);
-
-    alert(
-      `✅ Đã xuất Excel: ${fileName}\n` +
-        `📌 File được tải về Downloads của trình duyệt (hoặc nơi bạn chọn lưu).`
-    );
-  };
+  const qhLayerRef = useRef(null);
+  const drawnLayersRef = useRef([]);
 
   const markerRef = useRef(null);
   const warnedAccRef = useRef(false);
-  const didCenterRef = useRef(false); // ✅ chỉ center 1 lần mỗi lần bật vị trí
+  const didCenterRef = useRef(false);
   const isLocatingRef = useRef(false);
   const onFoundRef = useRef(null);
   const onErrorRef = useRef(null);
 
-  const targetMarkerRef = useRef(null); // ✅ pin đỏ đánh dấu
-  const addedMarkersRef = useRef([]); // ✅ lưu tất cả điểm bạn thêm bằng nút 📍
+  const targetMarkerRef = useRef(null);
+  const addedMarkersRef = useRef([]);
 
-  useEffect(() => {
-    isLocatingRef.current = isLocating;
-  }, [isLocating]);
-
-  // ✅ chỉ cho phép fitBounds khi đổi tỉnh
-  const shouldFitOnNextOverlayRef = useRef(true);
-
-  const [mapType, setMapType] = useState("sat");
-  const [overlayEnabled, setOverlayEnabled] = useState(false);
-  const [opacity, setOpacity] = useState(0.85);
-
-  const [provinceCode, setProvinceCode] = useState(
-    CATALOG[0]?.provinceCode ?? "91"
+  // ✅ các state được giữ lại sau reload/tab discard
+  const [mapType, setMapType] = useState(() => readLS("ratde_mapType", "sat"));
+  const [overlayEnabled, setOverlayEnabled] = useState(() =>
+    readLS("ratde_overlayEnabled", false)
   );
-  const [areaKey, setAreaKey] = useState(
-    CATALOG[0]?.areas?.[0]?.key ?? "thoai-son"
+  const [opacity, setOpacity] = useState(() =>
+    readLS("ratde_opacity", 0.85)
+  );
+  const [provinceCode, setProvinceCode] = useState(() =>
+    readLS("ratde_provinceCode", CATALOG[0]?.provinceCode ?? "91")
+  );
+  const [areaKey, setAreaKey] = useState(() =>
+    readLS("ratde_areaKey", CATALOG[0]?.areas?.[0]?.key ?? "thoai-son")
   );
 
   const selectedProvince = useMemo(
@@ -789,12 +686,36 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     return { osm, sat, hot };
   }, []);
 
+  // ✅ lưu localStorage
+  useEffect(() => {
+    writeLS("ratde_mapType", mapType);
+  }, [mapType]);
+
+  useEffect(() => {
+    writeLS("ratde_overlayEnabled", overlayEnabled);
+  }, [overlayEnabled]);
+
+  useEffect(() => {
+    writeLS("ratde_opacity", opacity);
+  }, [opacity]);
+
+  useEffect(() => {
+    writeLS("ratde_provinceCode", provinceCode);
+  }, [provinceCode]);
+
+  useEffect(() => {
+    writeLS("ratde_areaKey", areaKey);
+  }, [areaKey]);
+
+  useEffect(() => {
+    isLocatingRef.current = isLocating;
+  }, [isLocating]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     if (uiLocked) {
-      // khóa thao tác bản đồ
       map.dragging?.disable();
       map.scrollWheelZoom?.disable();
       map.doubleClickZoom?.disable();
@@ -802,7 +723,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       map.boxZoom?.disable();
       map.keyboard?.disable();
 
-      // khóa các mode của Geoman (nếu có)
       if (map.pm) {
         map.pm.disableDraw?.();
         map.pm.disableGlobalEditMode?.();
@@ -810,7 +730,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
         map.pm.disableGlobalRemovalMode?.();
       }
     } else {
-      // mở lại thao tác
       map.dragging?.enable();
       map.scrollWheelZoom?.enable();
       map.doubleClickZoom?.enable();
@@ -820,7 +739,9 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     }
   }, [uiLocked]);
 
-  // init map
+  const shouldFitOnNextOverlayRef = useRef(true);
+
+  // ✅ init map
   useEffect(() => {
     if (mapRef.current) return;
 
@@ -828,25 +749,28 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       zoomControl: false,
       attributionControl: false,
       preferCanvas: true,
-
-      // ✅ thêm renderer tolerance để dễ click vào line
-      renderer: L.canvas({ tolerance: 10 }), // thử 10 -> 15 nếu vẫn khó
+      renderer: L.canvas({ tolerance: 10 }),
     });
 
-    const dv = selectedProvince?.defaultView ?? {
-      lat: 10.8231,
-      lng: 106.6297,
-      zoom: 12,
-    };
+    const savedView = readLS("ratde_mapView", null);
+    const dv =
+      savedView ||
+      selectedProvince?.defaultView || {
+        lat: 10.8231,
+        lng: 106.6297,
+        zoom: 12,
+      };
+
     map.setView([dv.lat, dv.lng], dv.zoom);
 
-    layers.sat.addTo(map);
-    baseLayerRef.current = layers.sat;
+    const initialBase =
+      mapType === "osm" ? layers.osm : mapType === "hot" ? layers.hot : layers.sat;
+    initialBase.addTo(map);
+    baseLayerRef.current = initialBase;
 
     mapRef.current = map;
-    map.doubleClickZoom.disable(); // ✅ tắt zoom khi double click
+    map.doubleClickZoom.disable();
 
-    // ✅ Long-press để thả pin đỏ (mobile), click phải (desktop)
     let pressTimer = null;
     let pressLatLng = null;
 
@@ -864,14 +788,12 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       }
     };
 
-    // Desktop: click phải / giữ chuột -> context menu
     map.on("contextmenu", (e) => {
       placeTargetMarker(e.latlng);
     });
 
-    // Mobile: nhấn đè ~450ms
     map.on("mousedown touchstart", (e) => {
-      pressLatLng = e.latlng || (e.latlng === undefined ? null : e.latlng);
+      pressLatLng = e.latlng || null;
 
       pressTimer = setTimeout(() => {
         if (pressLatLng) placeTargetMarker(pressLatLng);
@@ -885,14 +807,11 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       }
     });
 
-    // ✅ Bật công cụ đo (Geoman)
     import("@geoman-io/leaflet-geoman-free").then(() => {
       if (!map.pm) {
         console.error("Geoman chưa load được!");
         return;
       }
-
-      const isMobile = window.matchMedia("(max-width: 640px)").matches;
 
       map.pm.addControls({
         position: "topright",
@@ -929,13 +848,10 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       setTimeout(forcePmPosition, 100);
       window.addEventListener("resize", forcePmPosition);
 
-      // ✅ tắt đo mặc định của Geoman để không ra km/ha
       map.pm.setGlobalOptions({
         measurements: false,
         showMeasurements: false,
         tooltips: false,
-
-        // ✅ đường nối tới chuột (hint)
         hintlineStyle: {
           color: "#eb0c2d",
           weight: 1.5,
@@ -944,7 +860,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
         },
       });
 
-      // ✅ Style cho nét vẽ (mỏng lại)
       map.pm.setPathOptions({
         color: "#f30b0b",
         weight: 1.5,
@@ -953,7 +868,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
         fillOpacity: 0.08,
       });
 
-      // ✅ live khi đang vẽ
       map.on("pm:drawstart", (e) => {
         const layer = e.workingLayer;
         if (!layer) return;
@@ -980,25 +894,22 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
         });
       });
 
-      // ✅ sau khi tạo xong / edit / drag
       map.on("pm:create", (e) => {
         const layer = e.layer;
 
-        drawnLayersRef.current.push(layer); // ✅ lưu để export tất cả
-
-       updateMeasureLabel(map, layer, measureL0);
+        drawnLayersRef.current.push(layer);
+        updateMeasureLabel(map, layer, measureL0);
 
         layer.on("pm:edit", () => updateMeasureLabel(map, layer, measureL0));
         layer.on("pm:update", () => updateMeasureLabel(map, layer, measureL0));
         layer.on("pm:dragend", () => updateMeasureLabel(map, layer, measureL0));
       });
 
-      // ✅ Khi xóa bằng removalMode -> dọn tooltip + segment labels
       map.on("pm:remove", (e) => {
         const layer = e.layer;
         if (!layer) return;
-        drawnLayersRef.current = drawnLayersRef.current.filter((l) => l !== layer);
 
+        drawnLayersRef.current = drawnLayersRef.current.filter((l) => l !== layer);
         clearSegLabels(layer);
 
         try {
@@ -1006,7 +917,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
         } catch {}
       });
 
-      // ✅ Phòng hờ: nếu layer bị remove bằng cách khác
       map.on("layerremove", (e) => {
         const layer = e.layer;
         if (!layer) return;
@@ -1029,7 +939,32 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       qhLayerRef.current = null;
       markerRef.current = null;
     };
-  }, [layers, selectedProvince, isForcedCompact]);
+  }, [layers, selectedProvince, isForcedCompact, mapType, measureL0]);
+
+  // ✅ lưu vị trí map hiện tại
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const saveView = () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+
+      writeLS("ratde_mapView", {
+        lat: center.lat,
+        lng: center.lng,
+        zoom,
+      });
+    };
+
+    map.on("moveend", saveView);
+    map.on("zoomend", saveView);
+
+    return () => {
+      map.off("moveend", saveView);
+      map.off("zoomend", saveView);
+    };
+  }, []);
 
   // change basemap
   useEffect(() => {
@@ -1045,11 +980,10 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     nextLayer.addTo(map);
     baseLayerRef.current = nextLayer;
 
-    // ✅ Đưa quy hoạch lên trên cùng
     if (qhLayerRef.current) qhLayerRef.current.bringToFront();
   }, [mapType, layers]);
 
-  // ✅ tạo/làm mới tile layer quy hoạch khi đổi tỉnh/khu vực
+  // tạo/làm mới tile layer quy hoạch
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedArea) return;
@@ -1073,14 +1007,15 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
 
     if (overlayEnabled) tileLayer.addTo(map);
 
-    // ✅ CHỈ zoom khi vừa đổi tỉnh
     if (shouldFitOnNextOverlayRef.current) {
-      const b = L.latLngBounds(selectedArea.bounds);
-      map.fitBounds(b, { padding: [20, 20] });
+      const savedView = readLS("ratde_mapView", null);
+      if (!savedView) {
+        const b = L.latLngBounds(selectedArea.bounds);
+        map.fitBounds(b, { padding: [20, 20] });
+      }
       shouldFitOnNextOverlayRef.current = false;
     }
 
-    // ✅ đảm bảo label (nếu có) vẫn nổi trên tile
     map.eachLayer((lyr) => {
       if (lyr instanceof L.Path) {
         try {
@@ -1096,7 +1031,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     const map = mapRef.current;
     if (!map) return;
 
-    // refresh tất cả đối tượng đã vẽ theo L0 mới
     for (const layer of drawnLayersRef.current || []) {
       try {
         updateMeasureLabel(map, layer, measureL0);
@@ -1104,12 +1038,10 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     }
   }, [measureL0]);
 
-  // ✅ đổi opacity (không load lại)
   useEffect(() => {
     if (qhLayerRef.current) qhLayerRef.current.setOpacity(opacity);
   }, [opacity]);
 
-  // ✅ bật/tắt layer (không load lại)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !qhLayerRef.current) return;
@@ -1127,7 +1059,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
 
   const ACC_WARN_M = 50;
 
-  // nhắc người dùng bật "vị trí chính xác" cho Chrome
   const showPreciseLocationHint = () => {
     alert(
       "Vị trí đang sai số lớn (>50m).\n\n" +
@@ -1143,13 +1074,11 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     const map = mapRef.current;
     if (!map) return;
 
-    // gỡ đúng handler đã gắn
     if (onFoundRef.current) map.off("locationfound", onFoundRef.current);
     if (onErrorRef.current) map.off("locationerror", onErrorRef.current);
 
     map.stopLocate();
 
-    // ✅ Xóa marker vị trí khỏi map
     if (markerRef.current) {
       try {
         map.removeLayer(markerRef.current);
@@ -1169,14 +1098,12 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     const map = mapRef.current;
     if (!map) return;
 
-    // ✅ Nếu đang bật → tắt (dùng ref để không bị trễ state)
     if (isLocatingRef.current) {
       stopLocating();
       warnedAccRef.current = false;
       return;
     }
 
-    // ✅ Bật
     setIsLocating(true);
     warnedAccRef.current = false;
 
@@ -1228,7 +1155,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       bubblingMouseEvents: false,
     }).addTo(map);
 
-    // ✅ dblclick mới xóa
     mk.on("dblclick", (e) => {
       L.DomEvent.stop(e);
       map.removeLayer(mk);
@@ -1255,8 +1181,8 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
       }
 
       if (coordMode === "vn2000") {
-        const X = parseFloat(xInput); // Northing
-        const Y = parseFloat(yInput); // Easting
+        const X = parseFloat(xInput);
+        const Y = parseFloat(yInput);
 
         if (isNaN(X) || isNaN(Y)) {
           alert("X/Y không hợp lệ");
@@ -1269,16 +1195,86 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
           return;
         }
 
-        // E=Y, N=X
         const wgs = vn2000TM3ToWgs84(Y, X, L0);
-
         addPointToMap(wgs.lat, wgs.lng);
       }
 
       setShowCoordModal(false);
-    } catch (err) {
+    } catch {
       alert("Lỗi chuyển tọa độ");
     }
+  };
+
+  const exportPointsToExcel = () => {
+    const L0 = PROVINCES_L0[provinceForConvert];
+    if (!L0) {
+      alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
+      return;
+    }
+
+    const layers = drawnLayersRef.current || [];
+    if (!layers.length) {
+      alert("Chưa có đối tượng nào được vẽ để xuất.");
+      return;
+    }
+
+    const flatten = (latlngs) => {
+      if (!Array.isArray(latlngs)) return [];
+      if (!Array.isArray(latlngs[0])) return latlngs;
+      if (!Array.isArray(latlngs[0][0])) return latlngs[0];
+      return latlngs[0][0];
+    };
+
+    const rows = [];
+    let stt = 1;
+
+    for (const layer of layers) {
+      if (!layer?.getLatLngs) continue;
+
+      let pts = flatten(layer.getLatLngs());
+
+      if (pts.length >= 2) {
+        const a = pts[0];
+        const b = pts[pts.length - 1];
+        if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
+      }
+
+      for (const p of pts) {
+        const lat = p.lat;
+        const lon = p.lng;
+
+        const vn = wgs84ToVn2000TM3(lat, lon, L0);
+
+        rows.push([
+          stt++,
+          Number(lat.toFixed(12)),
+          Number(lon.toFixed(12)),
+          Number(vn.X.toFixed(6)),
+          Number(vn.Y.toFixed(6)),
+        ]);
+      }
+    }
+
+    const header = ["STT", "Lat", "Long", "X", "Y"];
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Points");
+
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const now = new Date();
+    const fileName =
+      `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
+      `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
+      `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(
+        now.getSeconds()
+      )}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
+
+    alert(
+      `✅ Đã xuất Excel: ${fileName}\n` +
+        `📌 File được tải về Downloads của trình duyệt (hoặc nơi bạn chọn lưu).`
+    );
   };
 
   const onChangeProvince = (code) => {
@@ -1286,7 +1282,8 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
     setProvinceCode(code);
 
     const p = CATALOG.find((x) => x.provinceCode === code);
-    setAreaKey(p?.areas?.[0]?.key ?? "");
+    const nextAreaKey = p?.areas?.[0]?.key ?? "";
+    setAreaKey(nextAreaKey);
 
     const map = mapRef.current;
     if (map && p?.defaultView) {
@@ -1303,7 +1300,6 @@ export default function MapBackground({ user, approved, onRequireAuth, uiLocked,
           {mapType === "osm" ? "🏙️" : mapType === "sat" ? "🌍" : "🗺️"}
         </button>
 
-        {/* ✅ Badge nằm ngay dưới nút đổi map */}
         <div className="map-badge-inline">
           {mapType === "osm" ? "Phố" : mapType === "sat" ? "Vệ tinh" : "Map"}
         </div>
