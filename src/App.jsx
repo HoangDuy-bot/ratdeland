@@ -48,14 +48,24 @@ export default function App() {
 
   // 1) lấy user + lắng nghe auth
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+  supabase.auth.getUser().then(({ data }) => {
+    setUser((prev) => {
+      const next = data.user ?? null;
+      if (prev?.id === next?.id) return prev;
+      return next;
     });
+  });
 
-    return () => listener.subscription.unsubscribe();
-  }, []);
+  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    setUser((prev) => {
+      const next = session?.user ?? null;
+      if (prev?.id === next?.id) return prev;
+      return next;
+    });
+  });
+
+  return () => listener.subscription.unsubscribe();
+}, []);
 
   // 2) auto compact khi resize
   useEffect(() => {
@@ -73,46 +83,45 @@ export default function App() {
 
   // ✅ NEW: load quyền từ user_access để chặn map
   useEffect(() => {
-    const loadAccess = async () => {
-      if (!user) {
-        setApproved(false);
-        setCheckingAccess(false);
-        return;
-      }
-
-      setCheckingAccess(true);
-
-      const { data, error } = await supabase
-        .from("user_access")
-        .select("approved, expires_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.log("user_access error:", error);
-        setApproved(false);
-        setCheckingAccess(false);
-        return;
-      }
-
-      const okApproved = data?.approved === true;
-      const okNotExpired =
-        !data?.expires_at || new Date(data.expires_at) > new Date();
-
-      setApproved(okApproved && okNotExpired);
-      const allowed = okApproved && okNotExpired;
-      setApproved(allowed);
+  const loadAccess = async () => {
+    if (!user?.id) {
+      setApproved(false);
       setCheckingAccess(false);
+      return;
+    }
 
-      if (!allowed) {
-        await supabase.auth.signOut();
-  setAuthOpen(true);
-}
+    setCheckingAccess(true);
+
+    const { data, error } = await supabase
+      .from("user_access")
+      .select("approved, expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.log("user_access error:", error);
+      setApproved(false);
       setCheckingAccess(false);
-    };
+      return;
+    }
 
-    loadAccess();
-  }, [user]);
+    const okApproved = data?.approved === true;
+    const okNotExpired =
+      !data?.expires_at || new Date(data.expires_at) > new Date();
+
+    const allowed = okApproved && okNotExpired;
+
+    setApproved(allowed);
+    setCheckingAccess(false);
+
+    if (!allowed) {
+      await supabase.auth.signOut();
+      setAuthOpen(true);
+    }
+  };
+
+  loadAccess();
+}, [user?.id]);
 
   return (
     <div
