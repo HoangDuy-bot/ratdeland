@@ -1,7 +1,4 @@
 import * as XLSX from "xlsx";
-
-import { supabase } from "./supabaseClient";
-
 import "./MapBackground.css";
 
 import "leaflet/dist/leaflet.css";
@@ -12,8 +9,8 @@ import * as turf from "@turf/turf";
 import "@geoman-io/leaflet-geoman-free";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
-const SUPABASE_PUBLIC_BASE =
-  "https://nfocduuucvbcacpcivep.supabase.co/storage/v1/object/public/planning";
+const GITHUB_TILE_BASE =
+  "https://cdn.jsdelivr.net/gh/HoangDuy-bot/";
 
 const pinIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -64,6 +61,7 @@ const CATALOG = [
       {
         key: "thoai-son",
         label: "Thoại Sơn",
+        repo: "tiles-angiang-thoaison@main",
         tileRoot: "tiles/91/thoai-son",
         bounds: [
           [9.7956775828, 104.765625],
@@ -74,6 +72,7 @@ const CATALOG = [
       {
         key: "long-xuyen",
         label: "Long Xuyên",
+        repo: "tiles-angiang-longxuyen@main",
         tileRoot: "tiles/91/long-xuyen",
         bounds: [
           [9.7956775828, 104.765625],
@@ -84,6 +83,7 @@ const CATALOG = [
       {
         key: "chau-thanh",
         label: "Châu Thành",
+        repo: "tiles-angiang-chauthanh@main",
         tileRoot: "tiles/91/chau-thanh",
         bounds: [
           [9.7956775828, 104.765625],
@@ -94,6 +94,7 @@ const CATALOG = [
       {
         key: "tri-ton",
         label: "Tri Tôn",
+        repo: "tiles-angiang-triton@main",
         tileRoot: "tiles/91/tri-ton",
         bounds: [
           [9.7956775828, 104.765625],
@@ -104,6 +105,7 @@ const CATALOG = [
       {
         key: "hon-dat",
         label: "Hòn Đất",
+        repo: "tiles-kiengiang-hondat@main",
         tileRoot: "tiles/91/hon-dat",
         bounds: [
           [9.7956775828, 104.0625],
@@ -930,9 +932,14 @@ export default function MapBackground({
     const onResize = () => map.invalidateSize();
     window.addEventListener("resize", onResize);
 
-   return () => {
-  cancelAnimationFrame(raf);
-  window.removeEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      map.remove();
+      mapRef.current = null;
+      baseLayerRef.current = null;
+      qhLayerRef.current = null;
+      markerRef.current = null;
     };
   }, [layers, selectedProvince, isForcedCompact, mapType, measureL0]);
 
@@ -988,7 +995,8 @@ export default function MapBackground({
       qhLayerRef.current = null;
     }
 
-    const url = `${SUPABASE_PUBLIC_BASE}/${selectedArea.tileRoot}/Z{z}/{y}/{x}.png`;
+    const url =
+  `${GITHUB_TILE_BASE}${selectedArea.repo}/${selectedArea.tileRoot}/Z{z}/{y}/{x}.png`;
 
     const tileLayer = L.tileLayer(url, {
       maxNativeZoom: 17,
