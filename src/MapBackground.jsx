@@ -930,14 +930,9 @@ export default function MapBackground({
     const onResize = () => map.invalidateSize();
     window.addEventListener("resize", onResize);
 
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-      map.remove();
-      mapRef.current = null;
-      baseLayerRef.current = null;
-      qhLayerRef.current = null;
-      markerRef.current = null;
+   return () => {
+  cancelAnimationFrame(raf);
+  window.removeEventListener("resize", onResize);
     };
   }, [layers, selectedProvince, isForcedCompact, mapType, measureL0]);
 
