@@ -8,35 +8,31 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState(null);
 
-  // ✅ NEW: kiểm tra quyền approved
   const [approved, setApproved] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
-  // ✅ thêm state mở/đóng sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ✅ Auto: width <= 768 OR height <= 500
   const [isAutoCompact, setIsAutoCompact] = useState(
     window.innerWidth <= 768 || window.innerHeight <= 500
   );
 
-  // null = AUTO, "compact" = ép 3 gạch, "desktop" = ép mở rộng
   const [forceMode, setForceMode] = useState(null);
 
   const compactMode =
-    forceMode === "compact" ? true :
-    forceMode === "desktop" ? false :
-    isAutoCompact;
+    forceMode === "compact"
+      ? true
+      : forceMode === "desktop"
+      ? false
+      : isAutoCompact;
 
   const isForcedCompact = forceMode === null && isAutoCompact;
 
   const handleToggleCompact = () => {
     if (compactMode) {
-      // đang 3 gạch -> ép mở rộng desktop
       setForceMode("desktop");
       setSidebarOpen(false);
     } else {
-      // đang desktop -> ép thu nhỏ 3 gạch
       setForceMode("compact");
       setSidebarOpen(false);
     }
@@ -46,32 +42,36 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
-  // 1) lấy user + lắng nghe auth
+  // lấy user
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 2) auto compact khi resize
+  // auto compact
   useEffect(() => {
     const onResize = () => {
-      setIsAutoCompact(window.innerWidth <= 768 || window.innerHeight <= 500);
+      setIsAutoCompact(
+        window.innerWidth <= 768 || window.innerHeight <= 500
+      );
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ✅ NEW: auto mở modal khi chưa login
+  // mở modal nếu chưa login
   useEffect(() => {
     if (!user) setAuthOpen(true);
   }, [user]);
 
-  // ✅ NEW: load quyền từ user_access để chặn map
+  // load quyền user_access
   useEffect(() => {
     const loadAccess = async () => {
       if (!user) {
@@ -99,16 +99,15 @@ export default function App() {
       const okNotExpired =
         !data?.expires_at || new Date(data.expires_at) > new Date();
 
-      setApproved(okApproved && okNotExpired);
       const allowed = okApproved && okNotExpired;
+
       setApproved(allowed);
       setCheckingAccess(false);
 
       if (!allowed) {
         await supabase.auth.signOut();
-  setAuthOpen(true);
-}
-      setCheckingAccess(false);
+        setAuthOpen(true);
+      }
     };
 
     loadAccess();
@@ -116,27 +115,29 @@ export default function App() {
 
   return (
     <div
-      className={`app ${compactMode ? "compact" : ""} ${sidebarOpen ? "sidebar-open" : ""} ${
-        authOpen ? "modal-open" : ""
-      }`}
+      className={`app ${compactMode ? "compact" : ""} ${
+        sidebarOpen ? "sidebar-open" : ""
+      } ${authOpen ? "modal-open" : ""}`}
     >
-      {/* ✅ nút mở menu (chỉ hiện ở mobile nhờ CSS) */}
       {compactMode && (
-        <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+        <button
+          className="menu-btn"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Menu"
+        >
           ☰
         </button>
       )}
 
-      {/* ✅ backdrop (mobile) */}
       {compactMode && sidebarOpen && (
         <div className="backdrop" onClick={() => setSidebarOpen(false)} />
       )}
 
       {!isForcedCompact && (
         <button
-          className={`panel-toggle ${compactMode ? "is-compact" : "is-desktop"} ${
-            compactMode && !sidebarOpen ? "is-closed" : ""
-          }`}
+          className={`panel-toggle ${
+            compactMode ? "is-compact" : "is-desktop"
+          } ${compactMode && !sidebarOpen ? "is-closed" : ""}`}
           onClick={handleToggleCompact}
           title={compactMode ? "Mở rộng" : "Thu nhỏ"}
         >
@@ -148,6 +149,7 @@ export default function App() {
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="brand">
           <h1 className="title">RATDELand</h1>
+
           <p
             className="subtitle"
             style={{
@@ -156,12 +158,12 @@ export default function App() {
               fontWeight: "800",
               fontSize: "18px",
             }}
-            onClick={() => {
+            onClick={() =>
               window.open(
                 "https://youtu.be/LVHt2UEkX10?si=XNqbyVMWFNRCKQKr",
                 "_blank"
-              );
-            }}
+              )
+            }
           >
             Phần mềm địa chính RATDE
           </p>
@@ -195,31 +197,42 @@ export default function App() {
         </div>
       </div>
 
-      {/* Map / Gate */}
-      <div className="main" onClick={() => compactMode && setSidebarOpen(false)}>
-        {checkingAccess ? (
-          <div style={{ padding: 24, color: "white" }}>
+      {/* Map */}
+      <div
+        className="main"
+        onClick={() => compactMode && setSidebarOpen(false)}
+      >
+        {/* MAP LUÔN TỒN TẠI */}
+        <MapBackground
+          user={user}
+          approved={approved}
+          onRequireAuth={() => setAuthOpen(true)}
+          uiLocked={sidebarOpen || authOpen || !approved}
+          isForcedCompact={isForcedCompact}
+        />
+
+        {/* Overlay kiểm tra quyền */}
+        {checkingAccess && (
+          <div style={overlayStyle}>
             Đang kiểm tra quyền truy cập...
           </div>
-        ) : !user ? (
-          <div style={{ padding: 24, color: "white" }}>
+        )}
+
+        {!user && (
+          <div style={overlayStyle}>
             Vui lòng đăng nhập để sử dụng.
           </div>
-        ) : !approved ? (
-          <div style={{ padding: 24, color: "white" }}>
+        )}
+
+        {user && !approved && (
+          <div style={overlayStyle}>
             Tài khoản của bạn chưa được duyệt hoặc đã hết hạn.
             <div style={{ marginTop: 12 }}>
-              <button className="btn" onClick={logout}>Đăng xuất</button>
+              <button className="btn" onClick={logout}>
+                Đăng xuất
+              </button>
             </div>
           </div>
-        ) : (
-          <MapBackground
-            user={user}
-            approved={approved}
-            onRequireAuth={() => setAuthOpen(true)}
-            uiLocked={sidebarOpen || authOpen}
-            isForcedCompact={isForcedCompact}
-          />
         )}
       </div>
 
@@ -227,3 +240,12 @@ export default function App() {
     </div>
   );
 }
+
+const overlayStyle = {
+  position: "absolute",
+  inset: 0,
+  background: "rgba(0,0,0,0.55)",
+  color: "white",
+  padding: 24,
+  zIndex: 10000,
+};
