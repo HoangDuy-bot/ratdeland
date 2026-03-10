@@ -104,8 +104,8 @@ const CATALOG = [
       },
       {
         key: "hon-dat",
-        label: "Hòn Đất",
-        repo: "tiles-kiengiang-hondat@main",
+        label: "Hòn Đất (KG cũ)",
+        repo: "tiles-angiang-hondat@main",
         tileRoot: "tiles/91/hon-dat",
         bounds: [
           [9.7956775828, 104.0625],
