@@ -12,8 +12,8 @@ import * as turf from "@turf/turf";
 import "@geoman-io/leaflet-geoman-free";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
-const TILE_CDN_BASE =
-  "https://cdn.jsdelivr.net/gh/HoangDuy-bot/ratde-tiles";
+const SUPABASE_PUBLIC_BASE =
+  "https://nfocduuucvbcacpcivep.supabase.co/storage/v1/object/public/planning";
 
 const pinIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -64,7 +64,7 @@ const CATALOG = [
       {
         key: "thoai-son",
         label: "Thoại Sơn",
-        cdnPath: "An%20Giang%20(91)/thoaison",
+        tileRoot: "tiles/91/thoai-son",
         bounds: [
           [9.7956775828, 104.765625],
           [10.4878118821, 105.46875],
@@ -993,7 +993,7 @@ export default function MapBackground({
       qhLayerRef.current = null;
     }
 
-    const url = `${TILE_CDN_BASE}/${selectedArea.cdnPath}/{z}/{x}/{y}.png`;
+    const url = `${SUPABASE_PUBLIC_BASE}/${selectedArea.tileRoot}/Z{z}/{y}/{x}.png`;
 
     const tileLayer = L.tileLayer(url, {
       maxNativeZoom: 17,
