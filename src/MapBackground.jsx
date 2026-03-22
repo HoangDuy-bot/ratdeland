@@ -1293,6 +1293,34 @@ export default function MapBackground({
       map.setView([p.defaultView.lat, p.defaultView.lng], p.defaultView.zoom);
     }
   };
+  const maybeZoomToSelectedArea = () => {
+  const map = mapRef.current;
+  if (!map || !selectedArea?.bounds) return;
+
+  const areaBounds = L.latLngBounds(selectedArea.bounds);
+  const currentBounds = map.getBounds();
+  const currentCenter = map.getCenter();
+  const areaCenter = areaBounds.getCenter();
+
+  // TH1: màn hình hiện tại đã nằm hoàn toàn trong vùng quy hoạch
+  const alreadyInside =
+    areaBounds.contains(currentBounds.getSouthWest()) &&
+    areaBounds.contains(currentBounds.getNorthEast());
+
+  // TH2: tâm map đang rất gần tâm vùng quy hoạch
+  // Ở zoom hiện tại nếu gần đúng chỗ rồi thì khỏi ép zoom
+  const centerDistance = currentCenter.distanceTo(areaCenter);
+  const nearEnough = centerDistance < 600;
+
+  // TH3: đang giao nhau phần lớn với vùng quy hoạch thì cũng xem như "đúng chỗ"
+  const overlaps =
+    areaBounds.intersects(currentBounds) &&
+    currentBounds.getCenter().distanceTo(areaCenter) < 2000;
+
+  if (alreadyInside || nearEnough || overlaps) return;
+
+  map.fitBounds(areaBounds, { padding: [20, 20] });
+};
 
   return (
     <div className="map-wrap">
@@ -1361,17 +1389,27 @@ export default function MapBackground({
               type="checkbox"
               checked={overlayEnabled}
               onChange={(e) => {
+                const checked = e.target.checked;
+
                 if (!user) {
                   setOverlayEnabled(false);
                   onRequireAuth?.();
                   return;
                 }
+
                 if (!approved) {
                   alert("Tài khoản chưa được duyệt.");
                   setOverlayEnabled(false);
                   return;
                 }
-                setOverlayEnabled(e.target.checked);
+
+                setOverlayEnabled(checked);
+
+                if (checked) {
+                  setTimeout(() => {
+                    maybeZoomToSelectedArea();
+                  }, 0);
+                }
               }}
               style={{ marginRight: 8 }}
             />
