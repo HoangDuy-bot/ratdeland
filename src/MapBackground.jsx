@@ -1247,21 +1247,40 @@ export default function MapBackground({
   const normalizeEdge = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
   // thêm ghi chú vào đúng dòng điểm, không lặp
-  const appendNoteToPoint = (pointSTT, note) => {
-    const rowIdx = rowIndexBySTT.get(pointSTT);
-    if (rowIdx === undefined) return;
+    const getNoteOfPoint = (pointSTT) => {
+      const rowIdx = rowIndexBySTT.get(pointSTT);
+      if (rowIdx === undefined) return "";
+      return rows[rowIdx][5] || "";
+    };
 
-    const current = rows[rowIdx][5] || "";
-    if (!current) {
+    const setNoteOfPoint = (pointSTT, note) => {
+      const rowIdx = rowIndexBySTT.get(pointSTT);
+      if (rowIdx === undefined) return;
       rows[rowIdx][5] = note;
-      return;
-    }
+   
+    };
 
-    const parts = current.split("; ").map((s) => s.trim()).filter(Boolean);
-    if (!parts.includes(note)) {
-      rows[rowIdx][5] = `${current}; ${note}`;
-    }
-  };
+    const tryAttachEdgeNote = (a, b) => {
+      if (a === b) return false;
+
+      const noteA = getNoteOfPoint(a).trim();
+      const noteB = getNoteOfPoint(b).trim();
+
+      // ưu tiên đầu a nếu còn trống
+      if (!noteA) {
+        setNoteOfPoint(a, `${a}-${b}`);
+        return true;
+      }
+
+      // nếu a đã có mà b còn trống, đảo chiều để đẹp hơn
+      if (!noteB) {
+        setNoteOfPoint(b, `${b}-${a}`);
+        return true;
+      }
+
+      // cả hai đầu đều đã có ghi chú -> bỏ qua
+      return false;
+    };
 
   for (const layer of layers) {
     if (!layer?.getLatLngs) continue;
@@ -1298,13 +1317,14 @@ export default function MapBackground({
         const vn = wgs84ToVn2000TM3(lat, lng, L0);
 
         rows.push([
-          pointSTT,
-          Number(lat.toFixed(12)),
-          Number(lng.toFixed(12)),
-          Number(vn.X.toFixed(6)),
-          Number(vn.Y.toFixed(6)),
-          "", // Ghi chú
-        ]);
+        pointSTT,
+        Number(lat.toFixed(12)),
+        Number(lng.toFixed(12)),
+        Number(vn.X.toFixed(6)),
+        Number(vn.Y.toFixed(6)),
+        "", // Ghi chú
+        "", // Chiều dài
+      ]);
 
         rowIndexBySTT.set(pointSTT, rows.length - 1);
       }
@@ -1320,9 +1340,11 @@ export default function MapBackground({
       if (a === b) continue;
 
       const edgeKey = normalizeEdge(a, b);
-      if (!edgeSet.has(edgeKey)) {
+      if (edgeSet.has(edgeKey)) continue;
+
+      const attached = tryAttachEdgeNote(a, b);
+      if (attached) {
         edgeSet.add(edgeKey);
-        appendNoteToPoint(a, `${a}-${b}`);
       }
     }
 
@@ -1334,17 +1356,48 @@ export default function MapBackground({
       if (a !== b) {
         const edgeKey = normalizeEdge(a, b);
         if (!edgeSet.has(edgeKey)) {
-          edgeSet.add(edgeKey);
-          appendNoteToPoint(a, `${a}-${b}`);
+          const attached = tryAttachEdgeNote(a, b);
+          if (attached) {
+            edgeSet.add(edgeKey);
+          }
         }
       }
     }
   }
 
+    // 4) Tính chiều dài theo Ghi chú (a-b hoặc b-a)
+  // rows format: [STT, Lat, Long, X, Y, Ghi chú, Chiều dài]
+  const rowBySTT = new Map();
+  for (const row of rows) {
+    rowBySTT.set(row[0], row);
+  }
+
+  for (const row of rows) {
+    const note = String(row[5] || "").trim();
+    if (!note) continue;
+
+    const match = note.match(/^(\d+)-(\d+)$/);
+    if (!match) continue;
+
+    const a = Number(match[1]);
+    const b = Number(match[2]);
+
+    const rowA = rowBySTT.get(a);
+    const rowB = rowBySTT.get(b);
+
+    if (!rowA || !rowB) continue;
+
+    const p1 = { lat: Number(rowA[1]), lng: Number(rowA[2]) };
+    const p2 = { lat: Number(rowB[1]), lng: Number(rowB[2]) };
+
+    const lenM = vn2000DistanceM(p1, p2, L0);
+    row[6] = Number(lenM.toFixed(2));
+  }
+  
   // sắp theo STT cho đẹp
   rows.sort((r1, r2) => r1[0] - r2[0]);
 
-  const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú"];
+ const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú", "Chiều dài (m)"];
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Points");
