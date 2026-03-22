@@ -1231,7 +1231,7 @@ export default function MapBackground({
   // key tọa độ -> STT
   const pointMap = new Map();
 
-  // STT -> index dòng trong rows
+  // STT -> index dòng gốc đầu tiên trong rows
   const rowIndexBySTT = new Map();
 
   // tránh cạnh trùng kiểu 1-4 và 4-1
@@ -1246,41 +1246,61 @@ export default function MapBackground({
   // normalize cạnh để chống trùng cạnh đảo chiều
   const normalizeEdge = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
-  // thêm ghi chú vào đúng dòng điểm, không lặp
-    const getNoteOfPoint = (pointSTT) => {
-      const rowIdx = rowIndexBySTT.get(pointSTT);
-      if (rowIdx === undefined) return "";
-      return rows[rowIdx][5] || "";
-    };
+  const getNoteOfPoint = (pointSTT) => {
+    const rowIdx = rowIndexBySTT.get(pointSTT);
+    if (rowIdx === undefined) return "";
+    return String(rows[rowIdx][5] || "");
+  };
 
-    const setNoteOfPoint = (pointSTT, note) => {
-      const rowIdx = rowIndexBySTT.get(pointSTT);
-      if (rowIdx === undefined) return;
-      rows[rowIdx][5] = note;
-   
-    };
+  const setNoteOfPoint = (pointSTT, note) => {
+    const rowIdx = rowIndexBySTT.get(pointSTT);
+    if (rowIdx === undefined) return;
+    rows[rowIdx][5] = note;
+  };
 
-    const tryAttachEdgeNote = (a, b) => {
-      if (a === b) return false;
+  // thêm 1 dòng phụ để biểu diễn cạnh mới khi dòng gốc của điểm đã kín ghi chú
+  const appendExtraRowForPoint = (pointSTT, note) => {
+    const rowIdx = rowIndexBySTT.get(pointSTT);
+    if (rowIdx === undefined) return false;
 
-      const noteA = getNoteOfPoint(a).trim();
-      const noteB = getNoteOfPoint(b).trim();
+    const baseRow = rows[rowIdx];
 
-      // ưu tiên đầu a nếu còn trống
-      if (!noteA) {
-        setNoteOfPoint(a, `${a}-${b}`);
-        return true;
-      }
+    rows.push([
+      baseRow[0], // STT
+      baseRow[1], // Lat
+      baseRow[2], // Long
+      baseRow[3], // X
+      baseRow[4], // Y
+      note,       // Ghi chú
+      "",         // Chiều dài (m)
+    ]);
 
-      // nếu a đã có mà b còn trống, đảo chiều để đẹp hơn
-      if (!noteB) {
-        setNoteOfPoint(b, `${b}-${a}`);
-        return true;
-      }
+    return true;
+  };
 
-      // cả hai đầu đều đã có ghi chú -> bỏ qua
-      return false;
-    };
+  // luôn giữ đúng thứ tự cạnh gốc a-b
+  const tryAttachEdgeNote = (a, b) => {
+    if (a === b) return false;
+
+    const edgeText = `${a}-${b}`;
+    const noteA = getNoteOfPoint(a).trim();
+    const noteB = getNoteOfPoint(b).trim();
+
+    // ưu tiên gán vào điểm nào còn trống
+    if (!noteA) {
+      setNoteOfPoint(a, edgeText);
+      return true;
+    }
+
+    if (!noteB) {
+      setNoteOfPoint(b, edgeText);
+      return true;
+    }
+
+    // cả 2 đầu đều đã có ghi chú nhưng cạnh này chưa từng xuất hiện
+    // => thêm 1 dòng phụ để không bị mất cạnh
+    return appendExtraRowForPoint(a, edgeText);
+  };
 
   for (const layer of layers) {
     if (!layer?.getLatLngs) continue;
@@ -1317,14 +1337,14 @@ export default function MapBackground({
         const vn = wgs84ToVn2000TM3(lat, lng, L0);
 
         rows.push([
-        pointSTT,
-        Number(lat.toFixed(12)),
-        Number(lng.toFixed(12)),
-        Number(vn.X.toFixed(6)),
-        Number(vn.Y.toFixed(6)),
-        "", // Ghi chú
-        "", // Chiều dài
-      ]);
+          pointSTT,
+          Number(lat.toFixed(12)),
+          Number(lng.toFixed(12)),
+          Number(vn.X.toFixed(6)),
+          Number(vn.Y.toFixed(6)),
+          "", // Ghi chú
+          "", // Chiều dài (m)
+        ]);
 
         rowIndexBySTT.set(pointSTT, rows.length - 1);
       }
@@ -1365,11 +1385,16 @@ export default function MapBackground({
     }
   }
 
-    // 4) Tính chiều dài theo Ghi chú (a-b hoặc b-a)
-  // rows format: [STT, Lat, Long, X, Y, Ghi chú, Chiều dài]
-  const rowBySTT = new Map();
+  // 4) Tính chiều dài theo Ghi chú (a-b)
+  // vì 1 STT giờ có thể có nhiều dòng, chỉ lấy tọa độ gốc đầu tiên của STT đó
+  const pointInfoBySTT = new Map();
   for (const row of rows) {
-    rowBySTT.set(row[0], row);
+    if (!pointInfoBySTT.has(row[0])) {
+      pointInfoBySTT.set(row[0], {
+        lat: Number(row[1]),
+        lng: Number(row[2]),
+      });
+    }
   }
 
   for (const row of rows) {
@@ -1382,22 +1407,19 @@ export default function MapBackground({
     const a = Number(match[1]);
     const b = Number(match[2]);
 
-    const rowA = rowBySTT.get(a);
-    const rowB = rowBySTT.get(b);
+    const p1 = pointInfoBySTT.get(a);
+    const p2 = pointInfoBySTT.get(b);
 
-    if (!rowA || !rowB) continue;
-
-    const p1 = { lat: Number(rowA[1]), lng: Number(rowA[2]) };
-    const p2 = { lat: Number(rowB[1]), lng: Number(rowB[2]) };
+    if (!p1 || !p2) continue;
 
     const lenM = vn2000DistanceM(p1, p2, L0);
     row[6] = Number(lenM.toFixed(2));
   }
-  
+
   // sắp theo STT cho đẹp
   rows.sort((r1, r2) => r1[0] - r2[0]);
 
- const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú", "Chiều dài (m)"];
+  const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú", "Chiều dài (m)"];
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Points");
@@ -1415,7 +1437,8 @@ export default function MapBackground({
   alert(
     `✅ Đã xuất Excel: ${fileName}\n` +
       `• Điểm trùng sẽ dùng lại STT cũ\n` +
-      `• Polygon khép kín về đúng điểm đầu của polygon`
+      `• Giữ đúng thứ tự cạnh a-b\n` +
+      `• Nếu cạnh mới chưa có chỗ ghi, hệ thống sẽ tự thêm dòng phụ`
   );
 };
   const onChangeProvince = (code) => {
