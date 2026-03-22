@@ -941,7 +941,7 @@ export default function MapBackground({
       qhLayerRef.current = null;
       markerRef.current = null;
     };
-  }, [layers, selectedProvince, isForcedCompact, mapType, measureL0]);
+ }, [layers, selectedProvince, isForcedCompact]);
 
   // ✅ lưu vị trí map hiện tại
   useEffect(() => {
@@ -1433,7 +1433,7 @@ export default function MapBackground({
         </div>
 
         <div className="row">
-          <label className="label">Xuất - Vẽ chọn đúng Tỉnh cũ</label>
+          <label className="label">Xuất - Vẽ (Chọn Tỉnh trước)</label>
           <select
             className="select"
             value={provinceForConvert}
