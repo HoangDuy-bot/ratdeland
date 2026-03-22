@@ -1209,93 +1209,162 @@ export default function MapBackground({
   };
 
   const exportPointsToExcel = () => {
-    const L0 = PROVINCES_L0[provinceForConvert];
-    if (!L0) {
-      alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
-      return;
-    }
+  const L0 = PROVINCES_L0[provinceForConvert];
+  if (!L0) {
+    alert("Bạn chưa chọn tỉnh hợp lệ để đổi VN2000.");
+    return;
+  }
 
-    const layers = drawnLayersRef.current || [];
-    if (!layers.length) {
-      alert("Chưa có đối tượng nào được vẽ để xuất.");
-      return;
-    }
+  const layers = drawnLayersRef.current || [];
+  if (!layers.length) {
+    alert("Chưa có đối tượng nào được vẽ để xuất.");
+    return;
+  }
 
-    const flatten = (latlngs) => {
-      if (!Array.isArray(latlngs)) return [];
-      if (!Array.isArray(latlngs[0])) return latlngs;
-      if (!Array.isArray(latlngs[0][0])) return latlngs[0];
-      return latlngs[0][0];
-    };
-
-    const rows = [];
-    let stt = 1;
-
-    for (const layer of layers) {
-      if (!layer?.getLatLngs) continue;
-
-      let pts = flatten(layer.getLatLngs());
-
-      if (pts.length >= 2) {
-        const a = pts[0];
-        const b = pts[pts.length - 1];
-        if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
-      }
-
-     for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        const lat = p.lat;
-        const lon = p.lng;
-
-        const vn = wgs84ToVn2000TM3(lat, lon, L0);
-
-        // tạo ghi chú nối điểm
-        let note = "";
-
-        if (i < pts.length - 1) {
-          note = `${stt}-${stt + 1}`;
-        } else {
-          // nếu là polygon → nối về điểm đầu
-          if (layer instanceof L.Polygon && pts.length >= 3) {
-            note = `${stt}-1`;
-          }
-        }
-
-        rows.push([
-          stt,
-          Number(lat.toFixed(12)),
-          Number(lon.toFixed(12)),
-          Number(vn.X.toFixed(6)),
-          Number(vn.Y.toFixed(6)),
-          note,
-        ]);
-
-        stt++;
-      }
-    }
-
-    const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú"];
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Points");
-
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const now = new Date();
-    const fileName =
-      `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
-      `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
-      `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(
-        now.getSeconds()
-      )}.xlsx`;
-
-    XLSX.writeFile(wb, fileName);
-
-    alert(
-      `✅ Đã xuất Excel: ${fileName}\n` +
-        `📌 File được tải về Downloads của trình duyệt (hoặc nơi bạn chọn lưu).`
-    );
+  const flatten = (latlngs) => {
+    if (!Array.isArray(latlngs)) return [];
+    if (!Array.isArray(latlngs[0])) return latlngs;
+    if (!Array.isArray(latlngs[0][0])) return latlngs[0];
+    return latlngs[0][0];
   };
 
+  // key tọa độ -> STT
+  const pointMap = new Map();
+
+  // STT -> index dòng trong rows
+  const rowIndexBySTT = new Map();
+
+  // tránh cạnh trùng kiểu 1-4 và 4-1
+  const edgeSet = new Set();
+
+  const rows = [];
+  let stt = 1;
+
+  // dùng 8 chữ số để bắt trùng ổn định hơn với dữ liệu web map
+  const getPointKey = (lat, lng) => `${lat.toFixed(8)}_${lng.toFixed(8)}`;
+
+  // normalize cạnh để chống trùng cạnh đảo chiều
+  const normalizeEdge = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+
+  // thêm ghi chú vào đúng dòng điểm, không lặp
+  const appendNoteToPoint = (pointSTT, note) => {
+    const rowIdx = rowIndexBySTT.get(pointSTT);
+    if (rowIdx === undefined) return;
+
+    const current = rows[rowIdx][5] || "";
+    if (!current) {
+      rows[rowIdx][5] = note;
+      return;
+    }
+
+    const parts = current.split("; ").map((s) => s.trim()).filter(Boolean);
+    if (!parts.includes(note)) {
+      rows[rowIdx][5] = `${current}; ${note}`;
+    }
+  };
+
+  for (const layer of layers) {
+    if (!layer?.getLatLngs) continue;
+
+    let pts = flatten(layer.getLatLngs());
+
+    // bỏ điểm đóng trùng đầu-cuối nếu leaflet trả về
+    if (pts.length >= 2) {
+      const first = pts[0];
+      const last = pts[pts.length - 1];
+      if (first?.lat === last?.lat && first?.lng === last?.lng) {
+        pts = pts.slice(0, -1);
+      }
+    }
+
+    if (!pts.length) continue;
+
+    const sttList = [];
+
+    // 1) Gán STT theo tọa độ: trùng thì dùng lại, không trùng mới tạo mới
+    for (const p of pts) {
+      const lat = p.lat;
+      const lng = p.lng;
+      const key = getPointKey(lat, lng);
+
+      let pointSTT;
+
+      if (pointMap.has(key)) {
+        pointSTT = pointMap.get(key);
+      } else {
+        pointSTT = stt++;
+        pointMap.set(key, pointSTT);
+
+        const vn = wgs84ToVn2000TM3(lat, lng, L0);
+
+        rows.push([
+          pointSTT,
+          Number(lat.toFixed(12)),
+          Number(lng.toFixed(12)),
+          Number(vn.X.toFixed(6)),
+          Number(vn.Y.toFixed(6)),
+          "", // Ghi chú
+        ]);
+
+        rowIndexBySTT.set(pointSTT, rows.length - 1);
+      }
+
+      sttList.push(pointSTT);
+    }
+
+    // 2) Tạo cạnh trong chính layer này
+    for (let i = 0; i < sttList.length - 1; i++) {
+      const a = sttList[i];
+      const b = sttList[i + 1];
+
+      if (a === b) continue;
+
+      const edgeKey = normalizeEdge(a, b);
+      if (!edgeSet.has(edgeKey)) {
+        edgeSet.add(edgeKey);
+        appendNoteToPoint(a, `${a}-${b}`);
+      }
+    }
+
+    // 3) Nếu là polygon thì khép kín về điểm đầu của chính polygon đó
+    if (layer instanceof L.Polygon && sttList.length >= 3) {
+      const a = sttList[sttList.length - 1];
+      const b = sttList[0];
+
+      if (a !== b) {
+        const edgeKey = normalizeEdge(a, b);
+        if (!edgeSet.has(edgeKey)) {
+          edgeSet.add(edgeKey);
+          appendNoteToPoint(a, `${a}-${b}`);
+        }
+      }
+    }
+  }
+
+  // sắp theo STT cho đẹp
+  rows.sort((r1, r2) => r1[0] - r2[0]);
+
+  const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú"];
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Points");
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const now = new Date();
+
+  const fileName =
+    `XuatDiem_${provinceForConvert.replaceAll(" ", "_")}_` +
+    `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}_` +
+    `${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}.xlsx`;
+
+  XLSX.writeFile(wb, fileName);
+
+  alert(
+    `✅ Đã xuất Excel: ${fileName}\n` +
+      `• Điểm trùng sẽ dùng lại STT cũ\n` +
+      `• Polygon khép kín về đúng điểm đầu của polygon`
+  );
+};
   const onChangeProvince = (code) => {
     shouldFitOnNextOverlayRef.current = true;
     setProvinceCode(code);
