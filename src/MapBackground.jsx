@@ -1242,23 +1242,39 @@ export default function MapBackground({
         if (a?.lat === b?.lat && a?.lng === b?.lng) pts = pts.slice(0, -1);
       }
 
-      for (const p of pts) {
+     for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
         const lat = p.lat;
         const lon = p.lng;
 
         const vn = wgs84ToVn2000TM3(lat, lon, L0);
 
+        // tạo ghi chú nối điểm
+        let note = "";
+
+        if (i < pts.length - 1) {
+          note = `${stt}-${stt + 1}`;
+        } else {
+          // nếu là polygon → nối về điểm đầu
+          if (layer instanceof L.Polygon && pts.length >= 3) {
+            note = `${stt}-1`;
+          }
+        }
+
         rows.push([
-          stt++,
+          stt,
           Number(lat.toFixed(12)),
           Number(lon.toFixed(12)),
           Number(vn.X.toFixed(6)),
           Number(vn.Y.toFixed(6)),
+          note,
         ]);
+
+        stt++;
       }
     }
 
-    const header = ["STT", "Lat", "Long", "X", "Y"];
+    const header = ["STT", "Lat", "Long", "X", "Y", "Ghi chú"];
     const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Points");
@@ -1433,7 +1449,7 @@ export default function MapBackground({
         </div>
 
         <div className="row">
-          <label className="label">Xuất - Vẽ (Chọn Tỉnh trước)</label>
+          <label className="label">Xuất - Vẽ (Chọn Tỉnh Cũ)</label>
           <select
             className="select"
             value={provinceForConvert}
