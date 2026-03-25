@@ -165,7 +165,7 @@ export default function App() {
               )
             }
           >
-            Phần mềm địa chính RATDE
+            Download Phần mềm RATDE
           </p>
         </div>
 

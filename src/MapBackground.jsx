@@ -116,6 +116,25 @@ const CATALOG = [
     ],
     defaultView: { lat: 10.3, lng: 105.28, zoom: 12 },
   },
+
+   {
+    provinceCode: "82",
+    provinceName: "Đồng Tháp (82)",
+    areas: [
+      {
+        key: "huyen-hong-ngu",
+        label: "huyện Hồng Ngự",
+        repo: "tiles-dongthap-huyenhongngu@main",
+        tileRoot: "tiles/82/huyen-hong-ngu",
+        bounds: [
+          [10.4878118821, 104.765625],
+          [11.1784018737, 105.46875],
+        ],
+        maxZoom: 17,
+      },     
+    ],    
+    defaultView: { lat: 10.1417, lng: 104.7656, zoom: 12 },
+  },
 ];
 
 // ===== Provinces (VN2000 TM-3 central meridian L0) =====
