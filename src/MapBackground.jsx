@@ -133,7 +133,7 @@ const CATALOG = [
         maxZoom: 17,
       },     
     ],    
-    defaultView: { lat: 10.1417, lng: 104.7656, zoom: 12 },
+    defaultView: { lat: 10.8, lng: 105.1, zoom: 12 },
   },
 ];
 
