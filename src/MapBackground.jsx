@@ -131,7 +131,30 @@ const CATALOG = [
           [11.1784018737, 105.46875],
         ],
         maxZoom: 17,
-      },     
+      },
+
+      {
+        key: "thanhpho-hong-ngu",
+        label: "TP. Hồng Ngự",
+        repo: "tiles-dongthap-thanhphohongngu@main",
+        tileRoot: "tiles/82/thanhpho-hong-ngu",
+        bounds: [
+          [10.4878118821, 104.765625],
+          [11.1784018737, 105.46875],
+        ],
+        maxZoom: 17,
+      },
+      {
+        key: "tan-hong",
+        label: "Tân Hồng",
+        repo: "tiles-dongthap-tanhong@main",
+        tileRoot: "tiles/82/tan-hong",
+        bounds: [
+          [10.4878118821, 104.765625],
+          [11.1784018737, 105.46875],
+        ],
+        maxZoom: 17,
+      },
     ],    
    
   },
