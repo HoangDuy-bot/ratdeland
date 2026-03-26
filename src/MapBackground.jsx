@@ -167,7 +167,7 @@ const CATALOG = [
         key: "ben-luc",
         label: "Bến Lức (LA cũ)",
         repo: "tiles-tayninh-benluc@main",
-        tileRoot: "tiles/82/ben-luc",
+        tileRoot: "tiles/80/ben-luc",
         bounds: [
           [10.4878118821, 106.171875],
           [11.1784018737, 106.875],
