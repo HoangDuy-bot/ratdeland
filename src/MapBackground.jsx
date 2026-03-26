@@ -117,7 +117,7 @@ const CATALOG = [
    
   },
 
-   {
+  {
     provinceCode: "82",
     provinceName: "Đồng Tháp (82)",
     areas: [
@@ -155,6 +155,26 @@ const CATALOG = [
         ],
         maxZoom: 17,
       },
+    ],    
+   
+  },
+
+  {
+    provinceCode: "80",
+    provinceName: "Tây Ninh (80)",
+    areas: [
+      {
+        key: "ben-luc",
+        label: "Bến Lức (LA cũ)",
+        repo: "tiles-tayninh-benluc@main",
+        tileRoot: "tiles/82/ben-luc",
+        bounds: [
+          [10.4878118821, 106.171875],
+          [11.1784018737, 106.875],
+        ],
+        maxZoom: 17,
+      },
+      
     ],    
    
   },
