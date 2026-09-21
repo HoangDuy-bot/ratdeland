@@ -740,6 +740,18 @@ const [pinText,setPinText]=useState("");
 
 const [pinLatLng,setPinLatLng]=useState(null);
 
+const openPinModal=(latlng,pin=null)=>{
+
+  setPinLatLng(latlng);
+
+  setEditingPin(pin);
+
+  setPinText(pin?.text || "");
+
+  setPinModal(true);
+
+};
+
 const [provinceExport,setProvinceExport]=useState(
   PROVINCE_NAMES[0] || "An Giang"
 );
@@ -898,19 +910,7 @@ const [provinceExport,setProvinceExport]=useState(
     map.doubleClickZoom.disable();
 
     let pressTimer = null;
-    let pressLatLng = null;
-
-    const openPinModal=(latlng,pin=null)=>{
-
- setPinLatLng(latlng);
-
- setEditingPin(pin);
-
- setPinText(pin?.text || "");
-
- setPinModal(true);
-
-};
+    let pressLatLng = null;   
 
    map.on("contextmenu", (e) => {
 
