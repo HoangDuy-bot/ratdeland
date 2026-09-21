@@ -2040,7 +2040,19 @@ wb,
           </label>
         </div>
 
-        
+        <div className="row">          
+          <input
+            className="range"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={opacity}
+            onChange={(e) => setOpacity(parseFloat(e.target.value))}
+            disabled={!overlayEnabled}
+          />
+          <div className="pct">{Math.round(opacity * 100)}%</div>
+        </div>
 
         <div className="row">
           <label className="label">Chọn tỉnh để Xuất</label>
