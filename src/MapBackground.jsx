@@ -1560,6 +1560,116 @@ const savePin=()=>{
     }
   };
 
+  const exportRedPinsToExcel = () => {
+
+
+const L0 = PROVINCES_L0[provinceExport];
+
+
+if(!L0){
+
+alert(
+"Chưa chọn tỉnh để chuyển VN2000"
+);
+
+return;
+
+}
+
+
+if(!pins || pins.length===0){
+
+alert(
+"Chưa có ghim đỏ nào để xuất"
+);
+
+return;
+
+}
+
+
+
+const rows = pins.map(
+(pin,index)=>{
+
+
+const vn =
+wgs84ToVn2000TM3(
+pin.lat,
+pin.lng,
+L0
+);
+
+
+
+return [
+
+index+1,
+
+pin.id,
+
+Number(vn.X.toFixed(3)),
+
+Number(vn.Y.toFixed(3)),
+
+Number(pin.lat.toFixed(10)),
+
+Number(pin.lng.toFixed(10)),
+
+pin.text || ""
+
+];
+
+
+}
+
+);
+
+
+
+const ws =
+XLSX.utils.aoa_to_sheet(
+[
+
+[
+"STT",
+"Mã Ghim",
+"Tọa độ X VN2000",
+"Tọa độ Y VN2000",
+"Latitude WGS84",
+"Longitude WGS84",
+"Nội dung ghi chú"
+],
+
+
+...rows
+
+]
+
+);
+
+
+
+const wb =
+XLSX.utils.book_new();
+
+
+XLSX.utils.book_append_sheet(
+wb,
+ws,
+"Ghim đỏ"
+);
+
+
+
+XLSX.writeFile(
+wb,
+"Ghim_do_VN2000.xlsx"
+);
+
+
+};
+
   const exportPointsToExcel = () => {
   const L0 = PROVINCES_L0[provinceForConvert];
   if (!L0) {
@@ -1946,7 +2056,7 @@ const savePin=()=>{
         </div>
 
         <div className="row">
-          <label className="label">Xuất - Vẽ (Chọn Tỉnh Cũ)</label>
+          <label className="label">Chọn tỉnh để Xuất</label>
           <select
             className="select"
             value={provinceForConvert}
@@ -1962,7 +2072,14 @@ const savePin=()=>{
 
         <div className="row">
           <button className="export-btn" onClick={exportPointsToExcel}>
-            Xuất điểm (Excel)
+            Xuất đường vẽ
+          </button>
+
+          <button
+          className="export-btn"
+          onClick={exportRedPinsToExcel}
+          >
+          📌 Xuất ghi chú
           </button>
         </div>
       </div>
