@@ -740,18 +740,6 @@ const [pinText,setPinText]=useState("");
 
 const [pinLatLng,setPinLatLng]=useState(null);
 
-const openPinModal=(latlng,pin=null)=>{
-
-  setPinLatLng(latlng);
-
-  setEditingPin(pin);
-
-  setPinText(pin?.text || "");
-
-  setPinModal(true);
-
-};
-
 const [provinceExport,setProvinceExport]=useState(
   PROVINCE_NAMES[0] || "An Giang"
 );
@@ -910,7 +898,8 @@ const [provinceExport,setProvinceExport]=useState(
     map.doubleClickZoom.disable();
 
     let pressTimer = null;
-    let pressLatLng = null;   
+    let pressLatLng = null;
+   
 
    map.on("contextmenu", (e) => {
 
@@ -1196,7 +1185,7 @@ window.webkitSpeechRecognition;
 if(!SpeechRecognition){
 
 alert(
-"Trình duyệt không hỗ trợ nhận giọng nói"
+"Chrome không hỗ trợ nhập giọng nói"
 );
 
 return;
@@ -1204,81 +1193,46 @@ return;
 }
 
 
-const rec = new SpeechRecognition();
+const rec=new SpeechRecognition();
 
 
-rec.lang = "vi-VN";
+rec.lang="vi-VN";
+
+rec.continuous=false;
+
+rec.interimResults=false;
 
 
-// chỉ nhận 1 lần nói
-rec.continuous = false;
-
-
-// không lấy câu đang nghe thử
-rec.interimResults = false;
-
-
-// chỉ lấy 1 kết quả tốt nhất
-rec.maxAlternatives = 1;
-
-
-
-rec.onstart = ()=>{
+rec.onstart=()=>{
 
 console.log("🎤 Đang nghe...");
 
 };
 
 
-
-rec.onresult=(event)=>{
-
+rec.onresult=(e)=>{
 
 const text =
-event.results[0][0].transcript;
+e.results[0][0].transcript;
 
-
-// thay vì cộng nhiều lần
-// chỉ thêm 1 lần duy nhất
 
 setPinText(
-old => old ? old + " " + text : text
+old=>old+" "+text
 );
 
 
 };
 
 
+rec.onerror=(e)=>{
 
-rec.onerror=(event)=>{
-
-console.log(
-"Speech error:",
-event.error
-);
-
-
-if(event.error==="no-speech"){
+console.log(e);
 
 alert(
-"Không nhận được giọng nói, vui lòng thử lại."
-);
-
-}
-
-
-};
-
-
-
-rec.onend=()=>{
-
-console.log(
-"🎤 Đã dừng nghe"
+"Lỗi microphone: "+e.error
 );
 
 };
-
 
 
 rec.start();
