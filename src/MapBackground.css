@@ -188,3 +188,18 @@
   font-size: 13px;
   color: #0c0c0c;
 }
+.coord-box textarea{
+
+width:100%;
+
+min-height:80px;
+
+border-radius:8px;
+
+padding:8px;
+
+resize:vertical;
+
+font-size:14px;
+
+}

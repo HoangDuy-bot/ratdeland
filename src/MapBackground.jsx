@@ -178,6 +178,26 @@ const CATALOG = [
     ],    
    
   },
+
+  {
+    provinceCode: "56",
+    provinceName: "Khánh Hòa (56)",
+    areas: [
+      {
+        key: "khanh-vinh",
+        label: "Khánh Vĩnh",
+        repo: "tiles-khanhhoa-khanhvinh@main",
+        tileRoot: "tiles/56/khanh-vinh",
+        bounds: [
+          [10.4878118821, 106.171875],
+          [11.1784018737, 106.875],
+        ],
+        maxZoom: 17,
+      },
+      
+    ],    
+   
+  },
 ];
 
 // ===== Provinces (VN2000 TM-3 central meridian L0) =====
@@ -704,6 +724,26 @@ export default function MapBackground({
   const targetMarkerRef = useRef(null);
   const addedMarkersRef = useRef([]);
 
+  // ===== RED PIN NOTE SYSTEM =====
+
+const pinMarkersRef = useRef([]);
+
+const [pins,setPins] = useState(
+  ()=>readLS("ratde_red_pins",[])
+);
+
+const [pinModal,setPinModal] = useState(false);
+
+const [editingPin,setEditingPin]=useState(null);
+
+const [pinText,setPinText]=useState("");
+
+const [pinLatLng,setPinLatLng]=useState(null);
+
+const [provinceExport,setProvinceExport]=useState(
+  PROVINCE_NAMES[0] || "An Giang"
+);
+
   // ✅ các state được giữ lại sau reload/tab discard
   const [mapType, setMapType] = useState(() => readLS("ratde_mapType", "sat"));
   const [overlayEnabled, setOverlayEnabled] = useState(() =>
@@ -754,6 +794,16 @@ export default function MapBackground({
   useEffect(() => {
     writeLS("ratde_mapType", mapType);
   }, [mapType]);
+
+  useEffect(()=>{
+
+ if(mapRef.current){
+
+ renderAllPins(pins);
+
+ }
+
+},[pins]);
 
   useEffect(() => {
     writeLS("ratde_overlayEnabled", overlayEnabled);
@@ -838,30 +888,35 @@ export default function MapBackground({
     let pressTimer = null;
     let pressLatLng = null;
 
-    const placeTargetMarker = (latlng) => {
-      if (targetMarkerRef.current) {
-        targetMarkerRef.current.setLatLng(latlng);
-      } else {
-        targetMarkerRef.current = L.marker(latlng, { icon: redPinIcon }).addTo(
-          map
-        );
-        targetMarkerRef.current.on("click", () => {
-          map.removeLayer(targetMarkerRef.current);
-          targetMarkerRef.current = null;
-        });
-      }
-    };
+    const openPinModal=(latlng,pin=null)=>{
 
-    map.on("contextmenu", (e) => {
-      placeTargetMarker(e.latlng);
-    });
+ setPinLatLng(latlng);
 
+ setEditingPin(pin);
+
+ setPinText(pin?.text || "");
+
+ setPinModal(true);
+
+};
+
+   map.on("contextmenu", (e) => {
+
+ openPinModal(e.latlng);
+
+});
     map.on("mousedown touchstart", (e) => {
       pressLatLng = e.latlng || null;
 
       pressTimer = setTimeout(() => {
-        if (pressLatLng) placeTargetMarker(pressLatLng);
-      }, 450);
+
+    if(pressLatLng){
+
+      openPinModal(pressLatLng);
+
+    }
+
+    },450);
     });
 
     map.on("mouseup touchend touchcancel move", () => {
@@ -1119,6 +1174,166 @@ export default function MapBackground({
     if (!user) setOverlayEnabled(false);
   }, [user]);
 
+const voiceInput=()=>{
+
+
+const SpeechRecognition=
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
+
+
+if(!SpeechRecognition){
+
+alert(
+"Trình duyệt không hỗ trợ nhập giọng nói"
+);
+
+return;
+
+}
+
+
+const rec=new SpeechRecognition();
+
+
+rec.lang="vi-VN";
+
+
+rec.onresult=(e)=>{
+
+setPinText(
+e.results[0][0].transcript
+);
+
+};
+
+
+rec.start();
+
+
+}; 
+
+const renderAllPins=(list)=>{
+
+        const map=mapRef.current;
+
+        if(!map)return;
+
+
+        pinMarkersRef.current.forEach(m=>{
+
+        map.removeLayer(m);
+
+        });
+
+
+        pinMarkersRef.current=[];
+
+
+        list.forEach(pin=>{
+
+
+        const mk=L.marker(
+        [pin.lat,pin.lng],
+        {
+        icon:redPinIcon
+        }
+        )
+        .addTo(map);
+
+
+        mk.bindTooltip(
+        pin.text,
+        {
+        permanent:true,
+        direction:"top"
+        }
+        );
+
+
+        mk.on(
+        "click",
+        ()=>openPinModal(
+        {
+        lat:pin.lat,
+        lng:pin.lng
+        },
+        pin
+        )
+        );
+
+
+        pinMarkersRef.current.push(mk);
+
+
+        });
+
+
+};
+
+const savePin=()=>{
+
+        if(!pinLatLng || !pinText.trim())
+        return;
+
+
+        let list=[...pins];
+
+
+        if(editingPin){
+
+        list=list.map(p=>
+
+        p.id===editingPin.id
+        ?
+        {
+          ...p,
+          text:pinText,
+          updated:new Date()
+        }
+        :
+        p
+
+        );
+
+
+        }else{
+
+
+        list.push({
+
+        id:"PIN_"+Date.now(),
+
+        lat:pinLatLng.lat,
+
+        lng:pinLatLng.lng,
+
+        text:pinText,
+
+        created:new Date()
+
+        });
+
+
+        }
+
+
+        setPins(list);
+
+        writeLS(
+        "ratde_red_pins",
+        list
+        );
+
+
+        renderAllPins(list);
+
+
+        setPinModal(false);
+
+
+};
+  
   const cycleMapType = () =>
     setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
@@ -1737,6 +1952,70 @@ export default function MapBackground({
           </div>
         </div>
       )}
+
+       {pinModal && (
+
+      <div className="coord-modal">
+
+        <div className="coord-box">
+
+          <h4>
+            📌 Ghim vị trí
+          </h4>
+
+
+          <textarea
+            value={pinText}
+            onChange={
+              e=>setPinText(e.target.value)
+            }
+          />
+
+
+          <button onClick={voiceInput}>
+            🎤 Nhập giọng nói
+          </button>
+
+
+          <button onClick={savePin}>
+            💾 Lưu ghim
+          </button>
+
+
+          {
+          editingPin &&
+          <button
+          onClick={()=>{
+
+              const list =
+              pins.filter(
+                p=>p.id!==editingPin.id
+              );
+
+
+              setPins(list);
+
+              writeLS(
+                "ratde_red_pins",
+                list
+              );
+
+              setPinModal(false);
+
+          }}
+          >
+            🗑 Xóa ghim
+          </button>
+          }
+
+
+        </div>
+
+      </div>
+
+    )}
+
     </div>
+    
   );
 }
