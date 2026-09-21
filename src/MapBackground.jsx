@@ -883,6 +883,18 @@ const [provinceExport,setProvinceExport]=useState(
     baseLayerRef.current = initialBase;
 
     mapRef.current = map;
+    // load lại ghim đỏ sau khi map khởi tạo
+
+        setTimeout(()=>{
+
+        const oldPins=readLS(
+        "ratde_red_pins",
+        []
+        );
+
+        renderAllPins(oldPins);
+
+        },500);
     map.doubleClickZoom.disable();
 
     let pressTimer = null;
@@ -1176,8 +1188,7 @@ const [provinceExport,setProvinceExport]=useState(
 
 const voiceInput=()=>{
 
-
-const SpeechRecognition=
+const SpeechRecognition =
 window.SpeechRecognition ||
 window.webkitSpeechRecognition;
 
@@ -1185,7 +1196,7 @@ window.webkitSpeechRecognition;
 if(!SpeechRecognition){
 
 alert(
-"Trình duyệt không hỗ trợ nhập giọng nói"
+"Chrome không hỗ trợ nhập giọng nói"
 );
 
 return;
@@ -1198,11 +1209,38 @@ const rec=new SpeechRecognition();
 
 rec.lang="vi-VN";
 
+rec.continuous=false;
+
+rec.interimResults=false;
+
+
+rec.onstart=()=>{
+
+console.log("🎤 Đang nghe...");
+
+};
+
 
 rec.onresult=(e)=>{
 
+const text =
+e.results[0][0].transcript;
+
+
 setPinText(
-e.results[0][0].transcript
+old=>old+" "+text
+);
+
+
+};
+
+
+rec.onerror=(e)=>{
+
+console.log(e);
+
+alert(
+"Lỗi microphone: "+e.error
 );
 
 };
@@ -1211,7 +1249,7 @@ e.results[0][0].transcript
 rec.start();
 
 
-}; 
+};
 
 const renderAllPins=(list)=>{
 
@@ -1981,6 +2019,18 @@ const savePin=()=>{
             💾 Lưu ghim
           </button>
 
+          <button
+          onClick={()=>{
+
+          setPinModal(false);
+          setEditingPin(null);
+          setPinText("");
+          setPinLatLng(null);
+
+          }}
+          >
+          ❌ Hủy
+          </button>
 
           {
           editingPin &&
