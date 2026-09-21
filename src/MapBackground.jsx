@@ -1210,18 +1210,22 @@ const rec = new SpeechRecognition();
 rec.lang = "vi-VN";
 
 
-// quan trọng
+// chỉ nhận 1 lần nói
 rec.continuous = false;
 
-rec.interimResults = true;
 
-rec.maxAlternatives = 3;
+// không lấy câu đang nghe thử
+rec.interimResults = false;
+
+
+// chỉ lấy 1 kết quả tốt nhất
+rec.maxAlternatives = 1;
 
 
 
 rec.onstart = ()=>{
 
-console.log("🎤 Bắt đầu nghe");
+console.log("🎤 Đang nghe...");
 
 };
 
@@ -1230,23 +1234,15 @@ console.log("🎤 Bắt đầu nghe");
 rec.onresult=(event)=>{
 
 
-let text="";
+const text =
+event.results[0][0].transcript;
 
 
-for(
-let i=event.resultIndex;
-i<event.results.length;
-i++
-){
-
-text +=
-event.results[i][0].transcript;
-
-}
-
+// thay vì cộng nhiều lần
+// chỉ thêm 1 lần duy nhất
 
 setPinText(
-old=>old + " " + text
+old => old ? old + " " + text : text
 );
 
 
@@ -1265,7 +1261,7 @@ event.error
 if(event.error==="no-speech"){
 
 alert(
-"Không nhận được giọng nói. Anh thử nói gần micro hơn."
+"Không nhận được giọng nói, vui lòng thử lại."
 );
 
 }
@@ -1277,7 +1273,9 @@ alert(
 
 rec.onend=()=>{
 
-console.log("🎤 Kết thúc nghe");
+console.log(
+"🎤 Đã dừng nghe"
+);
 
 };
 
