@@ -1186,106 +1186,59 @@ const [provinceExport,setProvinceExport]=useState(
     if (!user) setOverlayEnabled(false);
   }, [user]);
 
-const voiceInput=()=>{
+const voiceInput = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Trình duyệt không hỗ trợ nhận giọng nói");
+    return;
+  }
 
+  const rec = new SpeechRecognition();
 
-if(!SpeechRecognition){
+  rec.lang = "vi-VN";
+  rec.continuous = false;
+  rec.interimResults = false; // Tắt kết quả tạm thời để không bị nhảy chữ liên tục
+  rec.maxAlternatives = 1;
 
-alert(
-"Trình duyệt không hỗ trợ nhận giọng nói"
-);
+  rec.onstart = () => {
+    console.log("🎤 Bắt đầu nghe...");
+  };
 
-return;
+  rec.onresult = (event) => {
+    let finalTranscript = "";
 
-}
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      // Chỉ lấy câu đã được trình duyệt chốt chính xác
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      }
+    }
 
+    const textCleaned = finalTranscript.trim();
 
-const rec = new SpeechRecognition();
+    if (textCleaned) {
+      setPinText((old) => {
+        const oldCleaned = old ? old.trim() : "";
+        return oldCleaned ? `${oldCleaned} ${textCleaned}` : textCleaned;
+      });
+    }
+  };
 
+  rec.onerror = (event) => {
+    console.log("Speech error:", event.error);
 
-rec.lang = "vi-VN";
+    if (event.error === "no-speech") {
+      alert("Không nhận được giọng nói. Thử nói gần micro hơn.");
+    }
+  };
 
+  rec.onend = () => {
+    console.log("🎤 Kết thúc nghe");
+  };
 
-// quan trọng
-rec.continuous = false;
-
-rec.interimResults = true;
-
-rec.maxAlternatives = 3;
-
-
-
-rec.onstart = ()=>{
-
-console.log("🎤 Bắt đầu nghe");
-
-};
-
-
-
-rec.onresult=(event)=>{
-
-
-let text="";
-
-
-for(
-let i=event.resultIndex;
-i<event.results.length;
-i++
-){
-
-text +=
-event.results[i][0].transcript;
-
-}
-
-
-setPinText(
-old=>old + " " + text
-);
-
-
-};
-
-
-
-rec.onerror=(event)=>{
-
-console.log(
-"Speech error:",
-event.error
-);
-
-
-if(event.error==="no-speech"){
-
-alert(
-"Không nhận được giọng nói. Anh thử nói gần micro hơn."
-);
-
-}
-
-
-};
-
-
-
-rec.onend=()=>{
-
-console.log("🎤 Kết thúc nghe");
-
-};
-
-
-
-rec.start();
-
-
+  rec.start();
 };
 
 const renderAllPins=(list)=>{
