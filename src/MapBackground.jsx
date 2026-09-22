@@ -728,6 +728,8 @@ export default function MapBackground({
 
 const pinMarkersRef = useRef([]);
 
+const recognitionRef = useRef(null); // 👈 Thêm ref lưu instance nhận diện giọng nói
+
 const [pins,setPins] = useState(
   ()=>readLS("ratde_red_pins",[])
 );
@@ -739,6 +741,8 @@ const [editingPin,setEditingPin]=useState(null);
 const [pinText,setPinText]=useState("");
 
 const [pinLatLng,setPinLatLng]=useState(null);
+
+const [isListening, setIsListening] = useState(false); // 👈 Thêm state quản lý trạng thái ghi âm
 
 const openPinModal=(latlng,pin=null)=>{
 
@@ -1187,6 +1191,13 @@ const [provinceExport,setProvinceExport]=useState(
   }, [user]);
 
 const voiceInput = () => {
+  // 1. Nếu đang ghi âm mà bấm tiếp -> Dừng ghi âm và nhận kết quả
+  if (isListening && recognitionRef.current) {
+    recognitionRef.current.stop();
+    setIsListening(false);
+    return;
+  }
+
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -1196,21 +1207,22 @@ const voiceInput = () => {
   }
 
   const rec = new SpeechRecognition();
+  recognitionRef.current = rec; // Lưu instance vào ref để có thể gọi stop()
 
   rec.lang = "vi-VN";
-  rec.continuous = false;
-  rec.interimResults = false; // Tắt kết quả tạm thời để không bị nhảy chữ liên tục
+  rec.continuous = true; // Bật continuous để ghi âm liên tục đến khi bấm dừng
+  rec.interimResults = false;
   rec.maxAlternatives = 1;
 
   rec.onstart = () => {
     console.log("🎤 Bắt đầu nghe...");
+    setIsListening(true);
   };
 
   rec.onresult = (event) => {
     let finalTranscript = "";
 
     for (let i = event.resultIndex; i < event.results.length; i++) {
-      // Chỉ lấy câu đã được trình duyệt chốt chính xác
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript;
       }
@@ -1228,14 +1240,16 @@ const voiceInput = () => {
 
   rec.onerror = (event) => {
     console.log("Speech error:", event.error);
-
     if (event.error === "no-speech") {
       alert("Không nhận được giọng nói. Thử nói gần micro hơn.");
     }
+    setIsListening(false);
   };
 
   rec.onend = () => {
     console.log("🎤 Kết thúc nghe");
+    setIsListening(false);
+    recognitionRef.current = null;
   };
 
   rec.start();
