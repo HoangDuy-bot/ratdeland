@@ -326,4 +326,32 @@ color:#222;
  opacity .25s ease;
 }
 
+/* ===== Leaflet Geoman Drawing Toolbar ===== */
 
+.leaflet-pm-toolbar {
+
+    position:absolute !important;
+
+    right:14px !important;
+
+    top:auto !important;
+
+    bottom:120px !important;
+
+    z-index:21000 !important;
+
+}
+
+
+
+@media(max-width:640px){
+
+.leaflet-pm-toolbar{
+
+    right:8px !important;
+
+    bottom:100px !important;
+
+}
+
+}
