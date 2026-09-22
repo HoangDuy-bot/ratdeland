@@ -6,6 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import * as turf from "@turf/turf";
 
+import JSZip from "jszip";
+import * as toGeoJSON from "@tmcw/togeojson";
+
 import "@geoman-io/leaflet-geoman-free";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
@@ -712,6 +715,11 @@ export default function MapBackground({
 
   const baseLayerRef = useRef(null);
   const qhLayerRef = useRef(null);
+
+  // ===== KMZ đo đạc =====
+  const kmzLayerRef = useRef(null);
+
+
   const drawnLayersRef = useRef([]);
 
   const markerRef = useRef(null);
@@ -765,6 +773,9 @@ const [provinceExport,setProvinceExport]=useState(
   const [overlayEnabled, setOverlayEnabled] = useState(() =>
     readLS("ratde_overlayEnabled", false)
   );
+
+  const [kmzVisible,setKmzVisible]=useState(true);
+
   const [opacity, setOpacity] = useState(() =>
     readLS("ratde_opacity", 0.85)
   );
@@ -1376,6 +1387,129 @@ const savePin=()=>{
 
 };
   
+// ===== LOAD KMZ ĐO ĐẠC =====
+
+const loadKMZ = async (event)=>{
+
+      const file = event.target.files[0];
+
+      if(!file) return;
+
+
+      try{
+
+
+      const zip = await JSZip.loadAsync(file);
+
+
+
+      const kmlFile =
+      Object.keys(zip.files)
+      .find(
+      name => name.toLowerCase().endsWith(".kml")
+      );
+
+
+
+      if(!kmlFile){
+
+      alert("File KMZ không có KML");
+
+      return;
+
+      }
+
+
+
+      const kmlText =
+      await zip.files[kmlFile]
+      .async("text");
+
+
+
+      const parser =
+      new DOMParser();
+
+
+
+      const kml =
+      parser.parseFromString(
+      kmlText,
+      "text/xml"
+      );
+
+
+
+      const geojson =
+      toGeoJSON.kml(kml);
+
+
+
+      const layer =
+      L.geoJSON(
+      geojson,
+      {
+
+      style:{
+      color:"#00bfff",
+      weight:0.5,
+      fillOpacity:0.15
+      }
+
+      }
+
+      );
+
+
+
+      const map = mapRef.current;
+
+
+      if(kmzLayerRef.current){
+
+      map.removeLayer(
+      kmzLayerRef.current
+      );
+
+      }
+
+
+
+      kmzLayerRef.current = layer;
+
+
+      if(kmzVisible){
+
+      layer.addTo(map);
+
+      }
+      map.fitBounds(
+      layer.getBounds()
+      );
+
+
+
+      console.log(
+      "Đã load KMZ",
+      file.name
+      );
+
+
+
+      }
+      catch(err){
+
+      console.error(err);
+
+      alert(
+      "Lỗi đọc file KMZ"
+      );
+
+      }
+
+
+};
+
   const cycleMapType = () =>
     setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
 
@@ -1940,6 +2074,30 @@ wb,
         >
           📍
         </button>
+
+       <label
+          className="map-btn kmz-btn"
+          title="Load file KMZ đo đạc"
+          >
+
+          <div className="kmz-icon">
+          📂
+          </div>
+
+          <div className="kmz-text">
+          Load KMZ
+          </div>
+
+
+          <input
+          type="file"
+          accept=".kmz"
+          hidden
+          onChange={loadKMZ}
+          />
+
+        </label>
+
       </div>
 
       <div className="map-panel">
