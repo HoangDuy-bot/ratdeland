@@ -8,15 +8,16 @@
   inset: 0;
 }
 
-/* ===== Toolbar ===== */
-.map-toolbar{
- position:absolute;
- top:14px;
- right:14px;
- z-index:20000;
+/* ===== TOOLBAR HỆ THỐNG ===== */
+.map-toolbar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 22000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-
-
 
 .map-btn {
   width: 44px;
@@ -31,28 +32,28 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* ===== Panel ===== */
+.map-btn.active {
+  background: #2563eb;
+  color: white;
+  border: 1px solid #2563eb;
+}
+
+/* ===== PANEL ===== */
 .map-panel {
-  position:absolute;
-  top:1%;
-  left:14px;
-
-  z-index:19000;
-
-  width:170px;
-  padding:10px;
-
-  border-radius:14px;
-
-  font-size:12px;
-
-  background:rgba(255,255,255,0.38);
-  border:1px solid rgba(255,255,255,0.4);
-
-  backdrop-filter:blur(16px) saturate(160%);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);
-
-  box-shadow:0 10px 30px rgba(0,0,0,.12);
+  position: absolute;
+  top: 1%;
+  left: 14px;
+  z-index: 19000;
+  width: 170px;
+  padding: 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 .row {
@@ -86,7 +87,23 @@
   opacity: 0.8;
 }
 
-/* ===== Badge ===== */
+.export-btn {
+  width: 100%;
+  height: 28px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  background: rgba(37, 99, 235, 0.95);
+  color: white;
+}
+
+.export-btn:active {
+  transform: translateY(1px);
+}
+
+/* ===== BADGE ===== */
 .map-badge {
   position: absolute;
   bottom: 14px;
@@ -100,82 +117,20 @@
   backdrop-filter: blur(6px);
 }
 
-/* ===== MOBILE ===== */
-@media (max-width: 640px) { 
- 
-  .map-panel { 
-    left: 8px; 
-    right: auto; 
-    top: 60px; 
- 
-    width: 180px; 
-    max-width: 80vw; 
- 
-    padding: 8px; 
-    border-radius: 14px; 
- 
-    max-height: 45vh; 
-    overflow-y: auto; 
- 
-    z-index: 25000; 
-  }
-
-
-  .map-panel .label {
-    font-size: 11px;
-  }
-
-
-  .map-panel .select {
-    height: 26px;
-    font-size: 12px;
-    padding: 3px 6px;
-  }
-
-
-  .export-btn {
-    height: 26px;
-    font-size: 12px;
-  }
-
-}
-.map-btn.active {
-  background: #2563eb;
-  color: white;
-  border: 1px solid #2563eb;
-}
-
-.export-btn {
-  width: 100%;
-  height: 28px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 14px;
-  background: rgba(37, 99, 235, 0.95);
-  color: white;
-}
-.export-btn:active {
-  transform: translateY(1px);
-}
-
+/* ===== MODAL TỌA ĐỘ ===== */
 .coord-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 9999;
-
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 35000;
   display: block;
 }
 
 .coord-box {
   position: absolute;
-
-  top: 15%;          /* ✅ desktop nằm sát trên 30% */
-  left: 60%;         /* ✅ căn giữa desktop (hoặc chỉnh lại theo ý) */
+  top: 15%;
+  left: 60%;
   transform: translateX(-50%);
-
   width: 280px;
   padding: 12px;
   border-radius: 10px;
@@ -185,17 +140,8 @@
   gap: 6px;
 }
 
-@media (max-width: 640px) {
-  .coord-box {
-    top: 50%;     /* ✅ mobile giữ như bạn đang dùng */
-    left: 45%;
-    transform: translateX(-50%);
-    width: min(86vw, 320px);  /* ✅ gọn hơn trên mobile */
-  }
-}
-
-.coord-box h4{
-  margin: 0 0 6px 0;   /* ✅ top = 0 => sát mép */
+.coord-box h4 {
+  margin: 0 0 6px 0;
   padding: 0;
   line-height: 1.1;
   font-size: 18px;
@@ -203,155 +149,139 @@
 
 .map-badge-inline {
   margin-top: 6px;
-  font-weight: 700;     /* in đậm */
+  font-weight: 700;
   font-size: 13px;
   color: #0c0c0c;
 }
-.coord-box textarea{
 
-width:100%;
-
-min-height:80px;
-
-border-radius:8px;
-
-padding:8px;
-
-resize:vertical;
-
-font-size:14px;
-
+.coord-box textarea {
+  width: 100%;
+  min-height: 80px;
+  border-radius: 8px;
+  padding: 8px;
+  resize: vertical;
+  font-size: 14px;
 }
 
-.export-pin-btn{
-  margin-top:10px;
+.export-pin-btn {
+  margin-top: 10px;
 }
 
-/* ===== KMZ Button ===== */
-
-/* ===== KMZ Button ===== */
-
-.kmz-btn{
-
-position:absolute;
-
-right:70px;
-
-top:6px;
-
-z-index:22000;
-
-width:44px;
-height:44px;
-
-display:flex;
-
-flex-direction:column;
-
-align-items:center;
-
-justify-content:center;
-
-border-radius:12px;
-
+/* ===== KMZ BUTTON ===== */
+.kmz-btn {
+  position: absolute;
+  right: 70px;
+  top: 6px;
+  z-index: 22000;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
 }
 
-
-/* icon folder */
-
-.kmz-icon{
-
-font-size:22px;
-
-line-height:20px;
-
+.kmz-icon {
+  font-size: 22px;
+  line-height: 20px;
 }
 
-
-/* chữ dưới icon */
-
-.kmz-text{
-
-position:absolute;
-
-top:48px;
-
-font-size:12px;
-
-font-weight:600;
-
-white-space:nowrap;
-
-color:#222;
-
+.kmz-text {
+  position: absolute;
+  top: 48px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #222;
 }
 
-/* Mobile menu button */
-/* Mobile menu button */
-
-.mobile-menu-btn { 
-
-    position:absolute !important;
-
-    top:14px;
-    left:14px;
-
-    width:44px;
-    height:44px;
-
-    z-index:30000 !important;
-
+/* ===== MOBILE MENU BUTTON ===== */
+.mobile-menu-btn {
+  position: absolute !important;
+  top: 14px;
+  left: 14px;
+  width: 44px;
+  height: 44px;
+  z-index: 30000 !important;
 }
 
-
-.mobile-menu-btn:active{
-
-    transform:scale(0.92);
-
+.mobile-menu-btn:active {
+  transform: scale(0.92);
 }
 
-
-/* tránh Leaflet đè */
-.leaflet-control-container { 
-
-    position:relative;
-
-    z-index:5000;
-
+/* ===== LEAFLET & GEOMAN TOOLBAR (ĐÃ KHÔI PHỤC GIỐNG BẢN CŨ) ===== */
+.leaflet-control-container {
+  z-index: 20000 !important;
 }
 
-.map-panel{
- transition:
- transform .25s ease,
- opacity .25s ease;
-}
-
-/* ===== Leaflet Geoman Drawing Toolbar ===== */
-
+/* Để Geoman tự điều hướng vị trí tự nhiên, chỉ tuỳ chỉnh giao diện các nút */
 .leaflet-pm-toolbar {
-
-    position:absolute !important;
-
-    right:14px !important;
-
-    top:auto !important;
-
-    bottom:120px !important;
-
-    z-index:21000 !important;
-
+  z-index: 20000 !important;
 }
 
-
-
-@media(max-width:640px){
-
-.leaflet-pm-toolbar{
-
-    right:8px !important;
-
-    bottom:100px !important;
-
+.leaflet-pm-toolbar .leaflet-pm-icon {
+  width: 20px !important;
+  height: 20px !important;
 }
 
+.leaflet-pm-toolbar > .leaflet-pm-action,
+.leaflet-pm-toolbar > button {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.leaflet-pm-toolbar button,
+.leaflet-pm-toolbar a {
+  border-radius: 10px !important;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .map-panel {
+    left: 8px;
+    right: auto;
+    top: 60px;
+    width: 180px;
+    max-width: 80vw;
+    padding: 8px;
+    border-radius: 14px;
+    max-height: 45vh;
+    overflow-y: auto;
+    z-index: 25000;
+  }
+
+  .map-panel .label {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  .map-panel .select {
+    height: 26px;
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+
+  .export-btn {
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .coord-box {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(86vw, 320px);
+  }
+
+  .leaflet-pm-toolbar > .leaflet-pm-action,
+  .leaflet-pm-toolbar > button {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .leaflet-pm-toolbar .leaflet-pm-icon {
+    width: 18px !important;
+    height: 18px !important;
+  }
 }

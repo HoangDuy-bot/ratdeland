@@ -975,27 +975,21 @@ const [provinceExport,setProvinceExport]=useState(
       });
 
       const forcePmPosition = () => {
+        const tb = document.querySelector(".leaflet-pm-toolbar");
+        if (!tb) return;
 
-  const tb = document.querySelector(".leaflet-pm-toolbar");
-
-  if (!tb) return;
-
-
-  // Đưa thanh công cụ vẽ xuống giữa bên phải
-
-  tb.style.top = "auto";
-
-  tb.style.bottom = "120px";
-
-  tb.style.right = "14px";
-
-  tb.style.left = "auto";
-
-  tb.style.transform = "none";
-
-  tb.style.marginTop = "0";
-
-};
+        if (isForcedCompact) {
+          tb.style.top = "3%";
+          tb.style.bottom = "auto";
+          tb.style.transform = "translateY(-3%)";
+          tb.style.marginTop = "0";
+        } else {
+          tb.style.top = "3%";
+          tb.style.bottom = "auto";
+          tb.style.transform = "translateY(-10%)";
+          tb.style.marginTop = "0";
+        }
+      };
 
       setTimeout(forcePmPosition, 100);
       window.addEventListener("resize", forcePmPosition);
