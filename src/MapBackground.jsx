@@ -718,7 +718,9 @@ export default function MapBackground({
 
   // ===== KMZ đo đạc =====
   const kmzLayerRef = useRef(null);
-
+  const [kmzLoaded, setKmzLoaded] = useState(false);
+  const [kmzFileName, setKmzFileName] = useState("");
+  const fileInputRef = useRef(null);
 
   const drawnLayersRef = useRef([]);
 
@@ -979,14 +981,14 @@ const [provinceExport,setProvinceExport]=useState(
         if (!tb) return;
 
         if (isForcedCompact) {
-          tb.style.top = "3%";
-          tb.style.bottom = "auto";
-          tb.style.transform = "translateY(-3%)";
-          tb.style.marginTop = "0";
-        } else {
-          tb.style.top = "3%";
+          tb.style.top = "20%";
           tb.style.bottom = "auto";
           tb.style.transform = "translateY(-10%)";
+          tb.style.marginTop = "0";
+        } else {
+          tb.style.top = "1%";
+          tb.style.bottom = "auto";
+          tb.style.transform = "translateY(-1%)";
           tb.style.marginTop = "0";
         }
       };
@@ -1387,128 +1389,80 @@ const savePin=()=>{
 
 };
   
-// ===== LOAD KMZ ĐO ĐẠC =====
+// ===== TẢI VÀ QUẢN LÝ KMZ =====
+  const loadKMZ = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-const loadKMZ = async (event)=>{
-
-      const file = event.target.files[0];
-
-      if(!file) return;
-
-
-      try{
-
-
+    try {
       const zip = await JSZip.loadAsync(file);
-
-
-
-      const kmlFile =
-      Object.keys(zip.files)
-      .find(
-      name => name.toLowerCase().endsWith(".kml")
+      const kmlFile = Object.keys(zip.files).find((name) =>
+        name.toLowerCase().endsWith(".kml")
       );
 
-
-
-      if(!kmlFile){
-
-      alert("File KMZ không có KML");
-
-      return;
-
+      if (!kmlFile) {
+        alert("File KMZ không hợp lệ (không chứa KML)");
+        return;
       }
 
+      const kmlText = await zip.files[kmlFile].async("text");
+      const parser = new DOMParser();
+      const kml = parser.parseFromString(kmlText, "text/xml");
+      const geojson = toGeoJSON.kml(kml);
 
-
-      const kmlText =
-      await zip.files[kmlFile]
-      .async("text");
-
-
-
-      const parser =
-      new DOMParser();
-
-
-
-      const kml =
-      parser.parseFromString(
-      kmlText,
-      "text/xml"
-      );
-
-
-
-      const geojson =
-      toGeoJSON.kml(kml);
-
-
-
-      const layer =
-      L.geoJSON(
-      geojson,
-      {
-
-      style:{
-      color:"#00bfff",
-      weight:0.5,
-      fillOpacity:0.15
-      }
-
-      }
-
-      );
-
-
+      const layer = L.geoJSON(geojson, {
+        style: {
+          color: "#00bfff",
+          weight: 1.5,
+          fillOpacity: 0.2,
+        },
+      });
 
       const map = mapRef.current;
-
-
-      if(kmzLayerRef.current){
-
-      map.removeLayer(
-      kmzLayerRef.current
-      );
-
+      if (kmzLayerRef.current && map) {
+        map.removeLayer(kmzLayerRef.current);
       }
-
-
 
       kmzLayerRef.current = layer;
 
-
-      if(kmzVisible){
-
-      layer.addTo(map);
-
+      if (map) {
+        layer.addTo(map);
+        map.fitBounds(layer.getBounds());
       }
-      map.fitBounds(
-      layer.getBounds()
-      );
 
-
-
-      console.log(
-      "Đã load KMZ",
-      file.name
-      );
-
-
-
-      }
-      catch(err){
-
+      setKmzLoaded(true);
+      setKmzVisible(true);
+      setKmzFileName(file.name);
+    } catch (err) {
       console.error(err);
+      alert("Lỗi đọc file KMZ!");
+    } finally {
+      event.target.value = ""; // Đặt lại value để chọn lại cùng file nếu muốn
+    }
+  };
 
-      alert(
-      "Lỗi đọc file KMZ"
-      );
+  const toggleKmzVisibility = (e) => {
+    const checked = e.target.checked;
+    setKmzVisible(checked);
+    const map = mapRef.current;
+    if (!map || !kmzLayerRef.current) return;
 
-      }
+    if (checked) {
+      kmzLayerRef.current.addTo(map);
+    } else {
+      map.removeLayer(kmzLayerRef.current);
+    }
+  };
 
-
-};
+  const unloadKMZ = () => {
+    const map = mapRef.current;
+    if (kmzLayerRef.current && map) {
+      map.removeLayer(kmzLayerRef.current);
+    }
+    kmzLayerRef.current = null;
+    setKmzLoaded(false);
+    setKmzFileName("");
+  };
 
   const cycleMapType = () =>
     setMapType((t) => (t === "osm" ? "sat" : t === "sat" ? "hot" : "osm"));
@@ -2074,30 +2028,61 @@ wb,
         >
           📍
         </button>
+       
 
-       <label
-          className="map-btn kmz-btn"
-          title="Load file KMZ đo đạc"
-          >
+      </div>
 
-          <div className="kmz-icon">
-          📂
+      {/* ===== PANEL KMZ ĐỘC LẬP (TOP CENTER) ===== */}
+      {/* ===== PANEL KMZ ĐỘC LẬP (XẾP DỌC) ===== */}
+      <div className="kmz-standalone-panel">
+        <div className="kmz-panel-header">
+          <span>🗺️ Quản lý KMZ</span>
+        </div>
+
+        {!kmzLoaded ? (
+          <div>
+            <input
+              type="file"
+              accept=".kmz"
+              ref={fileInputRef}
+              hidden
+              onChange={loadKMZ}
+            />
+            <button
+              className="kmz-panel-btn"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              📂 Tải KMZ
+            </button>
           </div>
+        ) : (
+          <div className="kmz-panel-content">
+            {/* Dòng 1: Tên file đã chọn */}
+            <span className="kmz-panel-filename" title={kmzFileName}>
+              📄 {kmzFileName}
+            </span>
 
-          <div className="kmz-text">
-          Load KMZ
+            {/* Dòng 2: Nút Checkbox Hiện + Nút Xóa nằm cạnh nhau ở dưới */}
+            <div className="kmz-panel-actions">
+              <label className="kmz-panel-checkbox">
+                <input
+                  type="checkbox"
+                  checked={kmzVisible}
+                  onChange={toggleKmzVisibility}
+                />
+                Hiện
+              </label>
+
+              <button
+                className="kmz-panel-unload"
+                onClick={unloadKMZ}
+                title="Xóa KMZ"
+              >
+                🗑️ Xóa
+              </button>
+            </div>
           </div>
-
-
-          <input
-          type="file"
-          accept=".kmz"
-          hidden
-          onChange={loadKMZ}
-          />
-
-        </label>
-
+        )}
       </div>
 
       <div className="map-panel">
@@ -2204,8 +2189,10 @@ wb,
           onClick={exportRedPinsToExcel}
           >
           📌 Xuất ghi chú
-          </button>
+          </button>        
         </div>
+       
+
       </div>
 
       {showCoordModal && (
