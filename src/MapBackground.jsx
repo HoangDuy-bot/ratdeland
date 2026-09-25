@@ -962,7 +962,7 @@ const [provinceExport,setProvinceExport]=useState(
       }
 
       map.pm.addControls({
-        position: "topright",
+        position: "bottomright",
         drawMarker: false,
         drawCircleMarker: false,
         drawCircle: false,
