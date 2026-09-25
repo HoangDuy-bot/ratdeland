@@ -8,8 +8,8 @@ export default defineConfig({
     sourcemap: false, // Tắt tạo file .map để không lộ mã nguồn gốc trên trình duyệt
     minify: "esbuild", // Nén và làm rối code
   },
-  esbuild: {
-    drop: ["console", "debugger"], // Tự động xóa các lệnh console.log để tránh rò rỉ dữ liệu qua F12
+  oxc: {
+    drop: ["console", "debugger"], // Tự động xóa console.log tương thích với Vite v8
   },
 
   plugins: [
