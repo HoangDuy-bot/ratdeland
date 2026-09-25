@@ -3,6 +3,15 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // 🔒 BẢO MẬT: Cấu hình ẩn mã nguồn và tối ưu mã code khi build
+  build: {
+    sourcemap: false, // Tắt tạo file .map để không lộ mã nguồn gốc trên trình duyệt
+    minify: "esbuild", // Nén và làm rối code
+  },
+  esbuild: {
+    drop: ["console", "debugger"], // Tự động xóa các lệnh console.log để tránh rò rỉ dữ liệu qua F12
+  },
+
   plugins: [
     react(),
     VitePWA({

@@ -1023,8 +1023,8 @@ const [provinceExport,setProvinceExport]=useState(
         if (layer.setStyle) {
           layer.setStyle({
             color: "#d3e910",
-            weight: 1.5,
-            opacity: 1,
+            weight: 0.5,
+            opacity: 0.5,
             fillColor: "#1e40af",
             fillOpacity: 0.08,
           });
@@ -1035,10 +1035,20 @@ const [provinceExport,setProvinceExport]=useState(
         layer.on("pm:vertexadded", refresh);
 
         const onMove = () => refresh();
-        map.on("mousemove", onMove);
+        // ✅ Mã mới (Sử dụng Throttling để giới hạn tần suất gọi 50ms/lần):
+        let lastRun = 0;
+        const throttledMove = () => {
+          const now = Date.now();
+          if (now - lastRun > 100) { // Giới hạn max 10 lần/giây
+            refresh();
+            lastRun = now;
+          }
+        };
+
+        map.on("mousemove", throttledMove);
 
         map.once("pm:drawend", () => {
-          map.off("mousemove", onMove);
+          map.off("mousemove", throttledMove);
         });
       });
 
@@ -1411,6 +1421,7 @@ const savePin=()=>{
       const geojson = toGeoJSON.kml(kml);
 
       const layer = L.geoJSON(geojson, {
+        interactive: false, // 🚀 Tắt tương tác chuột (Không bắt sự kiện click/hover) -> Giúp Map mượt vượt trội khi Zoom/Kéo/Vẽ
         style: {
           color: "#00bfff",
           weight: 1.5,
