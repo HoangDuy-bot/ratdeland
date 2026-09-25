@@ -981,14 +981,14 @@ const [provinceExport,setProvinceExport]=useState(
         if (!tb) return;
 
         if (isForcedCompact) {
-          tb.style.top = "20%";
+          tb.style.top = "3%";
           tb.style.bottom = "auto";
           tb.style.transform = "translateY(-10%)";
           tb.style.marginTop = "0";
         } else {
-          tb.style.top = "1%";
+          tb.style.top = "3%";
           tb.style.bottom = "auto";
-          tb.style.transform = "translateY(-1%)";
+          tb.style.transform = "translateY(-5%)";
           tb.style.marginTop = "0";
         }
       };
