@@ -78,8 +78,8 @@ const CATALOG = [
         repo: "tiles-angiang-tayphubddc@main",
         tileRoot: "tiles/91/tay-phubddc",
         bounds: [
-          [9.7956775828, 104.765625],
-          [10.4878118821, 105.46875],
+          [10.2824913015, 105.1171875],
+          [10.3743619084, 105.2490234375],
         ],
         maxZoom: 17,
       },
