@@ -81,7 +81,7 @@ const CATALOG = [
           [10.2824913015, 105.1171875],
           [10.3743619084, 105.2490234375],
         ],
-        maxZoom: 17,
+        maxZoom: 20,
       },
       {
         key: "long-xuyen",
@@ -1166,12 +1166,12 @@ const [provinceExport,setProvinceExport]=useState(
   `${GITHUB_TILE_BASE}${selectedArea.repo}/${selectedArea.tileRoot}/Z{z}/{y}/{x}.png`;
 
     const tileLayer = L.tileLayer(url, {
-      maxNativeZoom: 17,
-      maxZoom: 22,
-      opacity,
-      noWrap: true,
-      crossOrigin: true,
-    });
+  maxNativeZoom: selectedArea?.maxZoom || 17, // 👈 Sẽ tự lấy 20 khi chọn Tây Phú BDDC
+  maxZoom: 22,
+  opacity,
+  noWrap: true,
+  crossOrigin: true,
+});
 
     qhLayerRef.current = tileLayer;
 
