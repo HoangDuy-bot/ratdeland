@@ -74,7 +74,7 @@ const CATALOG = [
       },
       {
         key: "tay-phubddc",
-        label: "Tây Phú BDDC",
+        label: "Tây Phú BD",
         repo: "tiles-angiang-tayphubddc@main",
         tileRoot: "tiles/91/tay-phubddc",
         bounds: [
