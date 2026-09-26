@@ -73,6 +73,17 @@ const CATALOG = [
         maxZoom: 17,
       },
       {
+        key: "tay-phubddc",
+        label: "Tây Phú BDDC",
+        repo: "tiles-angiang-tayphubddc@main",
+        tileRoot: "tiles/91/tay-phubddc",
+        bounds: [
+          [9.7956775828, 104.765625],
+          [10.4878118821, 105.46875],
+        ],
+        maxZoom: 17,
+      },
+      {
         key: "long-xuyen",
         label: "Long Xuyên",
         repo: "tiles-angiang-longxuyen@main",
